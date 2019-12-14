@@ -1,8 +1,8 @@
 import 'phaser';
 import { Tweens } from 'phaser';
 
-const WIDTH = 768
-const HEIGHT = 896
+const WIDTH = document.documentElement.clientWidth
+const HEIGHT = document.documentElement.clientHeight
 
 export default class Bird extends Phaser.Scene {
 
@@ -15,7 +15,7 @@ export default class Bird extends Phaser.Scene {
 
   preload() {
     this.load.image('ground', 'assets/ground.png')
-    this.load.image('background', 'assets/background.png');
+    this.load.image('background', 'assets/background.png')
     this.load.spritesheet('bird', 'assets/bird.png', {
       frameWidth: 92,
       frameHeight: 64,
@@ -25,20 +25,22 @@ export default class Bird extends Phaser.Scene {
   }
 
   create() {
-    let platforms = this.physics.add.staticGroup();
-    let a = this.add.image(384, 320, 'background')
+    for (let i = 0; i < Math.ceil(WIDTH / 768); i++) {
+      this.add.image(i * 768 + 384 - i, 320, 'background')  // 图片拼接会有间隙
+    }
+    let platforms = this.physics.add.staticGroup()
     for (let i = 0; i < Math.ceil(WIDTH / 36); i++) {
       platforms.create(16 + 36 * i, 832, 'ground')
     }
     this.bird = this.physics.add.sprite(384, 448, 'bird')
-    this.bird.setCollideWorldBounds(true);
-    this.physics.add.collider(this.bird, platforms);
+    this.bird.setCollideWorldBounds(true)
+    this.physics.add.collider(this.bird, platforms)
     this.anims.create({
       key: 'birdfly',
       frames: this.anims.generateFrameNumbers('bird', { start: 0, end: 2 }),
       frameRate: 10,
       repeat: -1
-    });
+    })
     this.birdTween = this.tweens.add({
       targets: this.bird,
       delay: 300,
@@ -73,7 +75,7 @@ export default class Bird extends Phaser.Scene {
 
 const config = {
   type: Phaser.AUTO,
-  backgroundColor: '#125555',
+  backgroundColor: '#ded895',
   width: WIDTH,
   height: HEIGHT,
   scene: Bird,
