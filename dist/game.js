@@ -3,8 +3,8 @@ var MyGame = (function () {
 
   var global = window;
 
-  const WIDTH = 768;
-  const HEIGHT = 896;
+  const WIDTH = document.documentElement.clientWidth;
+  const HEIGHT = document.documentElement.clientHeight;
   class Bird extends Phaser.Scene {
       constructor() {
           super('Bird');
@@ -18,11 +18,12 @@ var MyGame = (function () {
               startFrame: 0,
               endFrame: 2
           });
-          // this.load.image('libs', 'assets/libs.png');
       }
       create() {
+          for (let i = 0; i < Math.ceil(WIDTH / 768); i++) {
+              this.add.image(i * 768 + 384 - i, 320, 'background'); // 图片拼接会有间隙
+          }
           let platforms = this.physics.add.staticGroup();
-          let a = this.add.image(384, 320, 'background');
           for (let i = 0; i < Math.ceil(WIDTH / 36); i++) {
               platforms.create(16 + 36 * i, 832, 'ground');
           }
@@ -68,7 +69,7 @@ var MyGame = (function () {
   }
   const config = {
       type: Phaser.AUTO,
-      backgroundColor: '#125555',
+      backgroundColor: '#ded895',
       width: WIDTH,
       height: HEIGHT,
       scene: Bird,
