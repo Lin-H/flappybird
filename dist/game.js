@@ -4,7 +4,7 @@ var MyGame = (function () {
   var global = window;
 
   const WIDTH = document.documentElement.clientWidth;
-  const HEIGHT = document.documentElement.clientHeight;
+  const HEIGHT = 896 || document.documentElement.clientHeight;
   class Bird extends Phaser.Scene {
       constructor() {
           super('Bird');
@@ -27,7 +27,7 @@ var MyGame = (function () {
           for (let i = 0; i < Math.ceil(WIDTH / 36); i++) {
               platforms.create(16 + 36 * i, 832, 'ground');
           }
-          this.bird = this.physics.add.sprite(384, 448, 'bird');
+          this.bird = this.physics.add.sprite(0, 0, 'bird');
           this.bird.setCollideWorldBounds(true);
           this.physics.add.collider(this.bird, platforms);
           this.anims.create({
@@ -60,6 +60,7 @@ var MyGame = (function () {
       }
       update() {
       }
+      start() { }
       fly() {
           this.bird.setAngle(-25);
           this.birdTween.resume();
@@ -70,9 +71,13 @@ var MyGame = (function () {
   const config = {
       type: Phaser.AUTO,
       backgroundColor: '#ded895',
-      width: WIDTH,
-      height: HEIGHT,
       scene: Bird,
+      scale: {
+          width: '100%',
+          height: HEIGHT,
+          mode: Phaser.Scale.ScaleModes.HEIGHT_CONTROLS_WIDTH,
+          autoCenter: Phaser.Scale.CENTER_HORIZONTALLY
+      },
       physics: {
           default: 'arcade',
           arcade: {
