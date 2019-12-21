@@ -72,9 +72,11 @@ var MyGame = (function () {
           let down = this.physics.add.image(400, 700, 'pipe');
           up.setGravityY(-2700); // 反重力
           down.setGravityY(-2700);
+          up.setImmovable();
+          down.setImmovable();
           down.setVelocityX(-200);
           up.setVelocityX(-200);
-          this.physics.collide(this.bird, down, () => {
+          this.physics.add.collider(this.bird, [down, up], () => {
               console.log(111);
           });
       }
