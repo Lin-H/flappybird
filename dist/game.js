@@ -33,7 +33,11 @@ var MyGame = (function () {
           this.bird = this.physics.add.sprite(400, 300, 'bird');
           this.bird.setDepth(2);
           this.bird.setCollideWorldBounds(true);
-          this.physics.add.collider(this.bird, platforms);
+          this.birdCollider = this.physics.add.collider(this.bird, platforms, () => {
+              if (!this.alive)
+                  return;
+              this.die();
+          });
           this.anims.create({
               key: 'birdfly',
               frames: this.anims.generateFrameNumbers('bird', { start: 0, end: 2 }),
@@ -59,19 +63,28 @@ var MyGame = (function () {
                   }
               }
           });
-          this.bird.play('birdfly');
-          this.input.on('pointerdown', this.fly, this);
+          this.start();
       }
       update() {
       }
       start() {
+          this.alive = true;
+          this.bird.play('birdfly');
+          this.input.on('pointerdown', this.fly, this);
+          setInterval(this.makePipes.bind(this), 5000);
       }
       die() {
+          this.alive = false;
+          this.input.off('pointerdown', this.fly);
+          this.birdTween.stop();
+          this.bird.setAngle(90);
+          this.bird.anims.stop();
       }
       makePipes() {
           let up = this.physics.add.image(1400, 300, 'pipe');
           up.setFlipY(true);
-          let down = this.physics.add.image(400, 700, 'pipe');
+          let down = this.physics.add.image(1400, 700, 'pipe');
+          // 目前Phaser有bug，physics.body的类型不正确
           up.body.setAllowGravity(false);
           down.body.setAllowGravity(false);
           up.setImmovable();
@@ -79,6 +92,9 @@ var MyGame = (function () {
           down.setVelocityX(-200);
           up.setVelocityX(-200);
           this.physics.add.collider(this.bird, [down, up], () => {
+              if (!this.alive)
+                  return;
+              this.die();
           });
       }
       fly() {
