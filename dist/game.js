@@ -3,6 +3,7 @@ var MyGame = (function () {
 
   var global = window;
 
+  /// <reference >
   const WIDTH = document.documentElement.clientWidth;
   const HEIGHT = 896 || document.documentElement.clientHeight;
   class Bird extends Phaser.Scene {
@@ -29,7 +30,7 @@ var MyGame = (function () {
               platforms.create(16 + 36 * i, 832, 'ground');
           }
           platforms.setDepth(10);
-          this.bird = this.physics.add.sprite(0, 0, 'bird');
+          this.bird = this.physics.add.sprite(400, 300, 'bird');
           this.bird.setDepth(2);
           this.bird.setCollideWorldBounds(true);
           this.physics.add.collider(this.bird, platforms);
@@ -60,24 +61,24 @@ var MyGame = (function () {
           });
           this.bird.play('birdfly');
           this.input.on('pointerdown', this.fly, this);
-          this.makePipes();
       }
       update() {
       }
       start() {
       }
+      die() {
+      }
       makePipes() {
           let up = this.physics.add.image(1400, 300, 'pipe');
           up.setFlipY(true);
           let down = this.physics.add.image(400, 700, 'pipe');
-          up.setGravityY(-2700); // 反重力
-          down.setGravityY(-2700);
+          up.body.setAllowGravity(false);
+          down.body.setAllowGravity(false);
           up.setImmovable();
           down.setImmovable();
           down.setVelocityX(-200);
           up.setVelocityX(-200);
           this.physics.add.collider(this.bird, [down, up], () => {
-              console.log(111);
           });
       }
       fly() {
