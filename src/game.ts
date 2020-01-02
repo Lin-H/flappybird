@@ -53,10 +53,10 @@ export default class Bird extends Phaser.Scene {
       props: {
         'angle':{
           value: {
-            getStart() {
+            getStart () {
               return -25
             },
-            getEnd() {
+            getEnd () {
               return 90
             }
           }
@@ -65,7 +65,8 @@ export default class Bird extends Phaser.Scene {
     })
     this.bird.play('birdfly')
     this.input.on('pointerdown', this.fly, this)
-    this.makePipes()
+    // this.makePipes()
+    this.makeProblem()
   }
   update() {
   }
@@ -85,6 +86,73 @@ export default class Bird extends Phaser.Scene {
       console.log(111)
     })
   }
+  makeProblem () {
+    let problem = {
+      question: {
+        label: '问题1问题1问题1问题1问题1'
+      },
+      answers: {
+        list: [{
+          label: '答案1',
+          isCorrect: true
+        }, {
+          label: '答案2',
+          isCorrect: false
+        }, {
+          label: '答案3',
+          isCorrect: false
+        }]
+      }
+    }
+    this.makeQuestion(problem.question)
+    this.makeAnswer(problem)
+  }
+  makeQuestion (question) {
+    question.instance = this.add.text(
+      WIDTH,
+      HEIGHT / 2 - 60,
+      question.label,
+      {
+        fontSize: '40px',
+        color: '#000'
+      }
+    )
+    this.makeArcadeInstance(question.instance)
+    this.physics.add.collider(this.bird, question.instance, () => {
+      this.fly()
+    })
+  }
+  makeAnswer (problem) {
+    let { question, answers } = problem
+    answers.list.forEach((item, index) => {
+      item.instance = this.add.text(
+        WIDTH + question.label.length * 70, 
+        200 * (index + 1),
+        item.label, 
+        { 
+          fontSize: '20px',
+          color: '#000' 
+        }
+      )
+      this.makeArcadeInstance(item.instance)
+      this.physics.add.collider(this.bird, item.instance, () => {
+        if (item.isCorrect) {
+          console.log('正确')
+        } else {
+          console.log('错误')
+        }
+        answers.list.forEach(item => item.instance.destroy())
+      })
+    })
+  }
+  makeArcadeInstance (instance) {
+    this.physics.world.enable(instance) 
+    let answerBody = instance.body as Phaser.Physics.Arcade.Body
+    answerBody.setAllowGravity(false)
+    answerBody.setImmovable()
+    answerBody.setVelocityX(-200)
+  }
+
   fly() {
     this.bird.setAngle(-25)
     this.birdTween.resume()
