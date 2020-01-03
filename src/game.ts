@@ -1,8 +1,11 @@
 /// <reference >
 
 import 'phaser';
-import { Tweens, Scale, Physics } from 'phaser';
+import {Physics, Tweens} from 'phaser';
+import * as localForage from 'localforage';
+import set = Reflect.set;
 
+const store = (localForage as any).default
 const WIDTH = document.documentElement.clientWidth
 const HEIGHT = 896 || document.documentElement.clientHeight
 
@@ -12,6 +15,8 @@ export default class Bird extends Phaser.Scene {
   birdTween: Tweens.Tween
   birdCollider: Physics.Arcade.Collider
   alive: Boolean
+  startLayer: Phaser.GameObjects.DOMElement
+  endLayer: Phaser.GameObjects.DOMElement
 
   constructor() {
     super('Bird')
@@ -30,6 +35,7 @@ export default class Bird extends Phaser.Scene {
   }
 
   create() {
+    this.openStartPanel()
     for (let i = 0; i < Math.ceil(WIDTH / 768); i++) {
       this.add.image(i * 768 + 384 - i, 320, 'background')  // 图片拼接会有间隙
     }
@@ -45,7 +51,7 @@ export default class Bird extends Phaser.Scene {
       if (!this.alive) return
       this.die()
     })
-    
+
     this.anims.create({
       key: 'birdfly',
       frames: this.anims.generateFrameNumbers('bird', { start: 0, end: 2 }),
@@ -110,6 +116,47 @@ export default class Bird extends Phaser.Scene {
     this.birdTween.restart()
     this.bird.setVelocityY(-700)
   }
+  openStartPanel() {
+    if (!this.startLayer) {
+      this.startLayer = this.add.dom(0, 0, '#start')
+      this.startLayer.addListener('click')
+      this.startLayer.on('click', ({target}) => {
+        if (!target.classList.contains('start-button')) return
+        const userName: String = (document.querySelector('.name-input') as HTMLInputElement).value.trim()
+        if (!userName) return alert('姓名不能为空')
+        store.getItem(userName).then((data) => {
+          if (data === null) {
+            // 新建用户
+            store.setItem(userName, +new Date()).then(() => {
+              this.startLayer.setVisible(false)
+            })
+          } else {
+            alert('这个姓名被占用了，请换个名字吧')
+          }
+        })
+      })
+    }
+    this.startLayer.setVisible(true)
+  }
+  openEndPanel() {
+    if (!this.endLayer) {
+      this.endLayer = this.add.dom(0, 0, '#end')
+      document.querySelector('.replay-button').addEventListener('click', () => {
+        this.endLayer.setVisible(false)
+        this.openStartPanel()
+      })
+    }
+    const gradeList = []
+    store.iterate((grade, user) => {
+      gradeList.push({user, grade})
+    }).then(() => {
+      gradeList.sort((a, b) => b.grade - a.grade)
+      let html = ''
+      gradeList.slice(0, 20).forEach(item => html += `<div><span>${item.user}</span><span>${item.grade}</span></div>`)
+      document.querySelector('.grade-list').innerHTML = html
+    })
+    this.endLayer.setVisible(true)
+  }
 }
 
 const config = {
@@ -129,6 +176,10 @@ const config = {
       debug: false
     }
   },
+  parent: 'body',
+  dom: {
+    createContainer: true
+  }
 };
 
 const game = new Phaser.Game(config)
