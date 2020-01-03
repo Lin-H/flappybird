@@ -1,9 +1,8 @@
 /// <reference >
 
 import 'phaser';
-import { Tweens, Scale, Physics } from 'phaser';
+import { Tweens, Scale, Physics, Structs } from 'phaser';
 
-const WIDTH = document.documentElement.clientWidth
 const HEIGHT = 896 || document.documentElement.clientHeight
 
 export default class Bird extends Phaser.Scene {
@@ -12,6 +11,8 @@ export default class Bird extends Phaser.Scene {
   birdTween: Tweens.Tween
   birdCollider: Physics.Arcade.Collider
   alive: Boolean
+  timer: NodeJS.Timeout
+  size: Structs.Size
 
   constructor() {
     super('Bird')
@@ -30,11 +31,12 @@ export default class Bird extends Phaser.Scene {
   }
 
   create() {
-    for (let i = 0; i < Math.ceil(WIDTH / 768); i++) {
+    this.size = this.scale.baseSize
+    for (let i = 0; i < Math.ceil(this.size.width / 768); i++) {
       this.add.image(i * 768 + 384 - i, 320, 'background')  // 图片拼接会有间隙
     }
     let platforms = this.physics.add.staticGroup()
-    for (let i = 0; i < Math.ceil(WIDTH / 36); i++) {
+    for (let i = 0; i < Math.ceil(this.size.width / 36); i++) {
       platforms.create(16 + 36 * i, 832, 'ground')
     }
     platforms.setDepth(10)
@@ -79,7 +81,7 @@ export default class Bird extends Phaser.Scene {
     this.alive = true
     this.bird.play('birdfly')
     this.input.on('pointerdown', this.fly, this)
-    setInterval(this.makePipes.bind(this), 5000)
+    this.timer = setInterval(this.makePipes.bind(this), 2000)
   }
   die() {
     this.alive = false
@@ -88,21 +90,34 @@ export default class Bird extends Phaser.Scene {
     this.bird.setAngle(90)
     this.bird.anims.stop()
   }
-  makePipes() {
-    let up = this.physics.add.image(1400, 300, 'pipe')
+  makePipes(gap = 200) {
+    let up = this.physics.add.image(this.size.width + 100, 0, 'pipe')
     up.setFlipY(true)
-    let down = this.physics.add.image(1400, 700, 'pipe');
+    let height = up.height
+    let randomHeight = Math.ceil(Math.random() * (this.size.height - 300 - gap)) -700 + height /2
+    up.y = randomHeight
+    let down = this.physics.add.image(this.size.width + 100, 0, 'pipe')
+    down.y = up.y + gap + height
     // 目前Phaser有bug，physics.body的类型不正确
-    (up.body as Physics.Arcade.Body).setAllowGravity(false);
-    (down.body as Physics.Arcade.Body).setAllowGravity(false)
+    ;(up.body as Physics.Arcade.Body).setAllowGravity(false)
+    ;(down.body as Physics.Arcade.Body).setAllowGravity(false)
     up.setImmovable()
     down.setImmovable()
     down.setVelocityX(-200)
     up.setVelocityX(-200)
+    let timer = setTimeout(() => {
+      up.destroy()
+      down.destroy()
+    }, 10000)
     this.physics.add.collider(this.bird, [down, up], () => {
       if (!this.alive) return
+      clearTimeout(timer)
       this.die()
+      this.stopPipes()
     })
+  }
+  stopPipes() {
+    clearInterval(this.timer) 
   }
   fly() {
     this.bird.setAngle(-25)
