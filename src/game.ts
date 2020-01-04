@@ -1,12 +1,13 @@
 /// <reference >
 
 import 'phaser';
-import { Tweens, Scale, Physics, Structs } from 'phaser';
-import * as localForage from 'localforage';
+import { Tweens, Physics, Structs } from 'phaser';
+import localForage from 'localforage';
 import problems from './problems'
 
 const store = (localForage as any).default
 const WIDTH = document.documentElement.clientWidth
+
 const HEIGHT = 896 || document.documentElement.clientHeight
 
 type Problem = {
@@ -296,12 +297,12 @@ export default class Bird extends Phaser.Scene {
       this.startLayer.addListener('click')
       this.startLayer.on('click', ({target}) => {
         if (!target.classList.contains('start-button')) return
-        const userName: String = (document.querySelector('.name-input') as HTMLInputElement).value.trim()
+        const userName = document.querySelector<HTMLInputElement>('.name-input').value.trim()
         if (!userName) return alert('姓名不能为空')
-        store.getItem(userName).then((data) => {
+        localForage.getItem(userName).then((data) => {
           if (data === null) {
             // 新建用户
-            store.setItem(userName, 0).then(() => {
+            localForage.setItem(userName, 0).then(() => {
               this.startLayer.setVisible(false)
             })
           } else {
@@ -322,7 +323,7 @@ export default class Bird extends Phaser.Scene {
       })
     }
     const gradeList = []
-    store.iterate((grade, user) => {
+    localForage.iterate((grade, user) => {
       gradeList.push({user, grade})
     }).then(() => {
       gradeList.sort((a, b) => b.grade - a.grade)
