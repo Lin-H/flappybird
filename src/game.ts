@@ -1,7 +1,11 @@
-import 'phaser'
-import { Tweens, Scale } from 'phaser'
+/// <reference >
+
+import 'phaser';
+import { Tweens, Scale, Physics, Structs } from 'phaser';
+import * as localForage from 'localforage';
 import problems from './problems'
 
+const store = (localForage as any).default
 const WIDTH = document.documentElement.clientWidth
 const HEIGHT = 896 || document.documentElement.clientHeight
 
@@ -21,15 +25,31 @@ type Answer = {
   instance?: Phaser.GameObjects.Text
 }
 
+enum Status {
+  ready,
+  palying,
+  end
+}
+
 export default class Bird extends Phaser.Scene {
 
   bird: Phaser.Physics.Arcade.Sprite
   birdTween: Tweens.Tween
   problems: Array<Problem>
   problem?: Problem
+  birdCollider: Physics.Arcade.Collider
+  alive: Boolean
+  startLayer: Phaser.GameObjects.DOMElement
+  endLayer: Phaser.GameObjects.DOMElement
+  status: Status
+  timer: NodeJS.Timeout
+  size: Structs.Size
+  birdFloat: Tweens.Tween
+  pipes: Phaser.Physics.Arcade.Group
 
   constructor() {
     super('Bird')
+    this.status = Status.ready
   }
 
   preload() {
@@ -45,18 +65,27 @@ export default class Bird extends Phaser.Scene {
   }
 
   create() {
-    for (let i = 0; i < Math.ceil(WIDTH / 768); i++) {
+    // 初始化数据
+    this.openStartPanel()
+    this.pipes = this.physics.add.group()
+    this.size = this.scale.baseSize
+    for (let i = 0; i < Math.ceil(this.size.width / 768); i++) {
       this.add.image(i * 768 + 384 - i, 320, 'background')  // 图片拼接会有间隙
     }
     let platforms = this.physics.add.staticGroup()
-    for (let i = 0; i < Math.ceil(WIDTH / 36); i++) {
+    for (let i = 0; i < Math.ceil(this.size.width / 36); i++) {
       platforms.create(16 + 36 * i, 832, 'ground')
     }
     platforms.setDepth(10)
-    this.bird = this.physics.add.sprite(0, 0, 'bird')
+    this.bird = this.physics.add.sprite(400, 300, 'bird')
     this.bird.setDepth(2)
-    this.bird.setCollideWorldBounds(true)
-    this.physics.add.collider(this.bird, platforms)
+    this.bird.setCollideWorldBounds(true);
+    (this.bird.body as Physics.Arcade.Body).setAllowGravity(false)
+    this.birdCollider = this.physics.add.collider(this.bird, platforms, () => {
+      if (this.status === Status.end) return
+      this.die()
+    })
+
     this.anims.create({
       key: 'birdfly',
       frames: this.anims.generateFrameNumbers('bird', { start: 0, end: 2 }),
@@ -85,25 +114,86 @@ export default class Bird extends Phaser.Scene {
     this.bird.play('birdfly')
     this.input.on('pointerdown', this.fly, this)
     // this.makePipes()
-    this.initProblems()
-    this.makeProblem()
+    // this.initProblems()
+    // this.makeProblem()
+    this.birdFloat = this.tweens.add({
+      targets: this.bird,
+      delay: 0,
+      duration: 800,
+      ease: 'ease',
+      y: {
+        value: '-=100'
+      },
+      yoyo: true,
+      repeat: -1
+    })
+    this.initEvent()
+    this.ready()
+  }
+  initEvent() {
+    this.input.on('pointerdown', function() {
+      switch (this.status) {
+        case Status.ready: {
+          return this.start()
+        }
+        case Status.palying: {
+          return this.fly()
+        }
+      }
+    }, this)
   }
   update() {
   }
-  start() {
+  ready() { // 进入准备阶段
+    this.bird.play('birdfly')
+    this.bird.setPosition(400, 300)
+    this.status = Status.ready
   }
-  makePipes() {
-    let up = this.physics.add.image(1400, 300, 'pipe')
+  start() {
+    this.status = Status.palying;
+    (this.bird.body as Physics.Arcade.Body).setAllowGravity()
+    this.birdFloat.stop()
+    this.bird.play('birdfly')
+    this.bird.setAngle(-25)
+    this.birdTween.resume()
+    this.bird.setVelocityY(-700)
+    this.timer = setInterval(this.makePipes.bind(this), 2000)
+  }
+  die() {
+    this.status = Status.end
+    this.input.off('pointerdown', this.fly)
+    this.birdTween.stop()
+    this.bird.setAngle(90)
+    this.bird.anims.stop()
+    // 停止所有水管移动
+    this.pipes.setVelocityX(0)
+    this.openEndPanel()
+  }
+  makePipes(gap = 200) {
+    let up = this.physics.add.image(this.size.width + 100, 0, 'pipe')
     up.setFlipY(true)
-    let down = this.physics.add.image(400, 700, 'pipe')
-    up.setGravityY(-2700) // 反重力
-    down.setGravityY(-2700)
+    let height = up.height
+    let randomHeight = Math.ceil(Math.random() * (this.size.height - 300 - gap)) -700 + height /2
+    up.y = randomHeight
+    let down = this.physics.add.image(this.size.width + 100, 0, 'pipe')
+    down.y = up.y + gap + height
+    this.pipes.addMultiple([up, down])
+    // 目前Phaser有bug，physics.body的类型不正确
+    ;(up.body as Physics.Arcade.Body).setAllowGravity(false)
+    ;(down.body as Physics.Arcade.Body).setAllowGravity(false)
     up.setImmovable()
     down.setImmovable()
     down.setVelocityX(-200)
     up.setVelocityX(-200)
+    let timer = setTimeout(() => {
+      this.pipes.remove(up)
+      this.pipes.remove(down)
+    }, 10000)
     this.physics.add.collider(this.bird, [down, up], () => {
-      console.log(111)
+      if (this.status === Status.end) return
+      clearTimeout(timer)
+      this.die()
+      this.stopPipes()
     })
   }
 
@@ -138,7 +228,7 @@ export default class Bird extends Phaser.Scene {
   makeAnswer () {
     this.problem.answers.forEach((item, index) => {
       item.instance = this.add.text(
-        WIDTH + this.problem.question.label.length * 50, 
+        WIDTH + this.problem.question.label.length * 55, 
         HEIGHT / (this.problem.answers.length + 1) * (index + 1) - 100,
         item.label, 
         { 
@@ -192,11 +282,55 @@ export default class Bird extends Phaser.Scene {
   }
   // about problems END
 
+  stopPipes() {
+    clearInterval(this.timer)
+  }
   fly() {
-    this.bird.setAngle(-25)
-    this.birdTween.resume()
     this.birdTween.restart()
     this.bird.setVelocityY(-700)
+  }
+  // 打开游戏开始面板
+  openStartPanel() {
+    if (!this.startLayer) {
+      this.startLayer = this.add.dom(0, 0, '#start')
+      this.startLayer.addListener('click')
+      this.startLayer.on('click', ({target}) => {
+        if (!target.classList.contains('start-button')) return
+        const userName: String = (document.querySelector('.name-input') as HTMLInputElement).value.trim()
+        if (!userName) return alert('姓名不能为空')
+        store.getItem(userName).then((data) => {
+          if (data === null) {
+            // 新建用户
+            store.setItem(userName, 0).then(() => {
+              this.startLayer.setVisible(false)
+            })
+          } else {
+            alert('这个姓名被占用了，请换个名字吧')
+          }
+        })
+      })
+    }
+    this.startLayer.setVisible(true)
+  }
+  // 游戏结束面板
+  openEndPanel() {
+    if (!this.endLayer) {
+      this.endLayer = this.add.dom(0, 0, '#end')
+      document.querySelector('.replay-button').addEventListener('click', () => {
+        this.endLayer.setVisible(false)
+        this.openStartPanel()
+      })
+    }
+    const gradeList = []
+    store.iterate((grade, user) => {
+      gradeList.push({user, grade})
+    }).then(() => {
+      gradeList.sort((a, b) => b.grade - a.grade)
+      let html = ''
+      gradeList.slice(0, 20).forEach(item => html += `<div><span>${item.user}</span><span>${item.grade}</span></div>`)
+      document.querySelector('.grade-list').innerHTML = html
+    })
+    this.endLayer.setVisible(true)
   }
 }
 
@@ -217,6 +351,10 @@ const config = {
       debug: false
     }
   },
-}
+  parent: 'body',
+  dom: {
+    createContainer: true
+  }
+};
 
 const game = new Phaser.Game(config)
