@@ -2808,7 +2808,6 @@ var MyGame = (function () {
 	});
 
 	/// <reference >
-	const store = localforage;
 	const HEIGHT = 896 || document.documentElement.clientHeight;
 	var Status;
 	(function (Status) {
@@ -2977,10 +2976,10 @@ var MyGame = (function () {
 	                const userName = document.querySelector('.name-input').value.trim();
 	                if (!userName)
 	                    return alert('姓名不能为空');
-	                store.getItem(userName).then((data) => {
+	                localforage.getItem(userName).then((data) => {
 	                    if (data === null) {
 	                        // 新建用户
-	                        store.setItem(userName, 0).then(() => {
+	                        localforage.setItem(userName, 0).then(() => {
 	                            this.startLayer.setVisible(false);
 	                        });
 	                    }
@@ -3002,7 +3001,7 @@ var MyGame = (function () {
 	            });
 	        }
 	        const gradeList = [];
-	        store.iterate((grade, user) => {
+	        localforage.iterate((grade, user) => {
 	            gradeList.push({ user, grade });
 	        }).then(() => {
 	            gradeList.sort((a, b) => b.grade - a.grade);
