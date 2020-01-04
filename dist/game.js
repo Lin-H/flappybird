@@ -4146,7 +4146,7 @@ var MyGame = (function () {
 	    }
 	    create() {
 	        // 初始化数据
-	        this.openStartPanel();
+	        // this.openStartPanel()
 	        this.pipes = this.physics.add.group();
 	        this.size = this.scale.baseSize;
 	        for (let i = 0; i < Math.ceil(this.size.width / 768); i++) {
@@ -4193,9 +4193,8 @@ var MyGame = (function () {
 	        });
 	        this.bird.play('birdfly');
 	        this.input.on('pointerdown', this.fly, this);
-	        // this.makePipes()
-	        // this.initProblems()
-	        // this.makeProblem()
+	        this.initProblems();
+	        this.makeProblem();
 	        this.birdFloat = this.tweens.add({
 	            targets: this.bird,
 	            delay: 0,
@@ -4237,7 +4236,7 @@ var MyGame = (function () {
 	        this.bird.setAngle(-25);
 	        this.birdTween.resume();
 	        this.bird.setVelocityY(-700);
-	        this.timer = setInterval(this.makePipes.bind(this), 2000);
+	        // this.timer = setInterval(this.makePipes.bind(this), 2000)
 	    }
 	    die() {
 	        this.status = Status.end;
@@ -4295,22 +4294,23 @@ var MyGame = (function () {
 	            fontSize: '40px',
 	            color: '#000'
 	        });
-	        this.makeArcadeInstance(this.problem.question.instance);
+	        let body = this.makeArcadeInstance(this.problem.question.instance);
+	        body.setImmovable();
 	        this.physics.add.collider(this.bird, this.problem.question.instance, () => {
 	            this.fly();
 	        });
 	    }
 	    makeAnswer() {
 	        this.problem.answers.forEach((item, index) => {
-	            item.instance = this.add.text(WIDTH + this.problem.question.label.length * 55, HEIGHT / (this.problem.answers.length + 1) * (index + 1) - 100, item.label, {
-	                fontSize: '20px',
+	            item.instance = this.add.text(WIDTH + this.problem.question.instance.width + 500, HEIGHT / (this.problem.answers.length + 1) * (index + 1) - 100, item.label, {
+	                fontSize: '28px',
 	                color: '#000'
 	            });
 	            let body = this.makeArcadeInstance(item.instance);
 	            // 开启答案与左墙壁的碰撞检测，用于未作答情况
 	            body.setCollideWorldBounds(true);
 	            body.onWorldBounds = true;
-	            body.world.setBoundsCollision(true, false, false, false);
+	            body.world.setBoundsCollision(true, false, true, true);
 	            body.world.on("worldbounds", body => {
 	                if (index === 0) {
 	                    this.refreshProblem(body);
@@ -4324,6 +4324,7 @@ var MyGame = (function () {
 	                else {
 	                    console.log('错误');
 	                }
+	                this.bird.setVelocityX(0); // 防止小鸟被反作用力反弹
 	                this.refreshProblem(body);
 	            });
 	        });
@@ -4332,14 +4333,14 @@ var MyGame = (function () {
 	        this.physics.world.enable(instance);
 	        let body = instance.body;
 	        body.setAllowGravity(false);
-	        body.setImmovable();
 	        body.setVelocityX(-200);
 	        return body;
 	    }
 	    refreshProblem(body) {
 	        body.world.removeListener('worldbounds');
 	        this.destroyProblem();
-	        this.makeProblem(); // todo 创建水管
+	        this.makeProblem(); // todo 删除掉这行
+	        console.log('创建水管');
 	    }
 	    destroyProblem() {
 	        this.problem.question.instance.destroy();
