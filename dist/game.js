@@ -2808,7 +2808,6 @@ var MyGame = (function () {
 	});
 
 	/// <reference >
-	const store = localforage;
 	const HEIGHT = 896 || document.documentElement.clientHeight;
 	var Status;
 	(function (Status) {
@@ -2978,9 +2977,9 @@ var MyGame = (function () {
 	                const userName = document.querySelector('.name-input').value.trim();
 	                if (!userName)
 	                    return alert('姓名不能为空');
-	                store.getItem(userName).then((data) => {
+	                localforage.getItem(userName).then((data) => {
 	                    // 新建用户数据
-	                    data === null && store.setItem(userName, 0);
+	                    data === null && localforage.setItem(userName, 0);
 	                    this.currentUser = userName;
 	                    this.startLayer.setVisible(false);
 	                });
@@ -2998,7 +2997,7 @@ var MyGame = (function () {
 	            });
 	        }
 	        const gradeList = [];
-	        store.iterate((grade, user) => {
+	        localforage.iterate((grade, user) => {
 	            gradeList.push({ user, grade });
 	        }).then(() => {
 	            gradeList.sort((a, b) => b.grade - a.grade);
@@ -3011,10 +3010,10 @@ var MyGame = (function () {
 	    // 设置分数
 	    setGrade(grade) {
 	        return new Promise(resolve => {
-	            store.getItem(this.currentUser).then(data => {
+	            localforage.getItem(this.currentUser).then(data => {
 	                // 取最高分存入
 	                if (grade > data) {
-	                    store.setItem(this.currentUser, grade).then(resolve);
+	                    localforage.setItem(this.currentUser, grade).then(resolve);
 	                }
 	                else {
 	                    resolve();

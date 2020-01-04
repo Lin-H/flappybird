@@ -1,10 +1,9 @@
 /// <reference >
 
 import 'phaser';
-import { Tweens, Scale, Physics, Structs } from 'phaser';
-import * as localForage from 'localforage';
+import { Tweens, Physics, Structs } from 'phaser';
+import localForage from 'localforage';
 
-const store = (localForage as any).default
 const HEIGHT = 896 || document.documentElement.clientHeight
 
 enum Status {
@@ -187,13 +186,13 @@ export default class Bird extends Phaser.Scene {
       this.startLayer.addListener('click')
       this.startLayer.on('click', ({target}) => {
         if (!target.classList.contains('start-button')) return
-        const userName = (document.querySelector('.name-input') as HTMLInputElement).value.trim()
+        const userName = document.querySelector<HTMLInputElement>('.name-input').value.trim()
         if (!userName) return alert('姓名不能为空')
-        store.getItem(userName).then((data) => {
-          // 新建用户数据
-          data === null && store.setItem(userName, 0)
-          this.currentUser = userName
-          this.startLayer.setVisible(false)
+        localForage.getItem(userName).then((data) => {
+            // 新建用户数据
+            data === null && localForage.setItem(userName, 0)
+            this.currentUser = userName
+            this.startLayer.setVisible(false)
         })
       })
     }
@@ -209,7 +208,7 @@ export default class Bird extends Phaser.Scene {
       })
     }
     const gradeList = []
-    store.iterate((grade, user) => {
+    localForage.iterate((grade, user) => {
       gradeList.push({user, grade})
     }).then(() => {
       gradeList.sort((a, b) => b.grade - a.grade)
@@ -222,10 +221,10 @@ export default class Bird extends Phaser.Scene {
   // 设置分数
   setGrade(grade) {
     return new Promise(resolve => {
-      store.getItem(this.currentUser).then(data => {
+      localForage.getItem(this.currentUser).then(data => {
         // 取最高分存入
         if (grade > data) {
-          store.setItem(this.currentUser, grade).then(resolve)
+          localForage.setItem(this.currentUser, grade).then(resolve)
         } else {
           resolve()
         }
