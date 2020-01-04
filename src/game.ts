@@ -116,6 +116,7 @@ export default class Bird extends Phaser.Scene {
     this.birdTween.restart()
     this.bird.setVelocityY(-700)
   }
+  // 打开游戏开始面板
   openStartPanel() {
     if (!this.startLayer) {
       this.startLayer = this.add.dom(0, 0, '#start')
@@ -127,7 +128,7 @@ export default class Bird extends Phaser.Scene {
         store.getItem(userName).then((data) => {
           if (data === null) {
             // 新建用户
-            store.setItem(userName, +new Date()).then(() => {
+            store.setItem(userName, 0).then(() => {
               this.startLayer.setVisible(false)
             })
           } else {
@@ -138,6 +139,7 @@ export default class Bird extends Phaser.Scene {
     }
     this.startLayer.setVisible(true)
   }
+  // 游戏结束面板
   openEndPanel() {
     if (!this.endLayer) {
       this.endLayer = this.add.dom(0, 0, '#end')
