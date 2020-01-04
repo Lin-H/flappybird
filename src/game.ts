@@ -1,13 +1,31 @@
-import 'phaser';
-import { Tweens, Scale } from 'phaser';
+import 'phaser'
+import { Tweens, Scale } from 'phaser'
+import problems from './problems'
 
 const WIDTH = document.documentElement.clientWidth
 const HEIGHT = 896 || document.documentElement.clientHeight
+
+type Problem = {
+  question: Question,
+  answers: Array<Answer>
+}
+
+type Question = {
+  label: string,
+  instance?: Phaser.GameObjects.Text
+}
+
+type Answer = {
+  label: string,
+  isCorrect: boolean,
+  instance?: Phaser.GameObjects.Text
+}
 
 export default class Bird extends Phaser.Scene {
 
   bird: Phaser.Physics.Arcade.Sprite
   birdTween: Tweens.Tween
+  problems: Array<Problem>
 
   constructor() {
     super('Bird')
@@ -66,6 +84,7 @@ export default class Bird extends Phaser.Scene {
     this.bird.play('birdfly')
     this.input.on('pointerdown', this.fly, this)
     // this.makePipes()
+    this.initProblems()
     this.makeProblem()
   }
   update() {
@@ -86,28 +105,21 @@ export default class Bird extends Phaser.Scene {
       console.log(111)
     })
   }
+
+  // about problems START
+  initProblems () {
+    this.problems = JSON.parse(JSON.stringify(problems))
+  }
   makeProblem () {
-    let problem = {
-      question: {
-        label: '问题1问题1问题1问题1问题1'
-      },
-      answers: {
-        list: [{
-          label: '答案1',
-          isCorrect: true
-        }, {
-          label: '答案2',
-          isCorrect: false
-        }, {
-          label: '答案3',
-          isCorrect: false
-        }]
-      }
-    }
+    let problem = this.chooseProblem()
     this.makeQuestion(problem.question)
     this.makeAnswer(problem)
   }
-  makeQuestion (question) {
+  chooseProblem (): Problem {
+    const index = Math.floor(Math.random() * this.problems.length)
+    return this.problems.splice(index, 1)[0]
+  }
+  makeQuestion (question: Question) {
     question.instance = this.add.text(
       WIDTH,
       HEIGHT / 2 - 60,
@@ -122,12 +134,12 @@ export default class Bird extends Phaser.Scene {
       this.fly()
     })
   }
-  makeAnswer (problem) {
+  makeAnswer (problem: Problem) {
     let { question, answers } = problem
-    answers.list.forEach((item, index) => {
+    answers.forEach((item, index) => {
       item.instance = this.add.text(
-        WIDTH + question.label.length * 70, 
-        200 * (index + 1),
+        WIDTH + question.label.length * 50, 
+        HEIGHT / (answers.length + 1) * (index + 1) - 100,
         item.label, 
         { 
           fontSize: '20px',
@@ -141,17 +153,26 @@ export default class Bird extends Phaser.Scene {
         } else {
           console.log('错误')
         }
-        answers.list.forEach(item => item.instance.destroy())
+        this.destroyProblem(problem)
+        this.makeProblem()
+        console.log('创建水管') // todo 越过题目也要调用
       })
+      
     })
   }
-  makeArcadeInstance (instance) {
+  makeArcadeInstance (instance: Phaser.GameObjects.Text) {
     this.physics.world.enable(instance) 
-    let answerBody = instance.body as Phaser.Physics.Arcade.Body
-    answerBody.setAllowGravity(false)
-    answerBody.setImmovable()
-    answerBody.setVelocityX(-200)
+    let body = instance.body as Phaser.Physics.Arcade.Body
+    body.setAllowGravity(false)
+    body.setImmovable()
+    body.setVelocityX(-200)
   }
+  destroyProblem (problem: Problem) {
+    let { question, answers } = problem
+    question.instance.destroy()
+    answers.forEach(item => item.instance.destroy())
+  }
+  // about problems END
 
   fly() {
     this.bird.setAngle(-25)
@@ -178,6 +199,6 @@ const config = {
       debug: false
     }
   },
-};
+}
 
 const game = new Phaser.Game(config)
