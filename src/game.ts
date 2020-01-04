@@ -1,5 +1,3 @@
-/// <reference >
-
 import 'phaser';
 import { Tweens, Physics, Structs } from 'phaser';
 import localForage from 'localforage';
@@ -47,6 +45,7 @@ export default class Bird extends Phaser.Scene {
   birdFloat: Tweens.Tween
   pipes: Phaser.Physics.Arcade.Group
   currentUser: string
+  score: Phaser.GameObjects.Text
 
   constructor() {
     super('Bird')
@@ -54,6 +53,7 @@ export default class Bird extends Phaser.Scene {
   }
 
   preload() {
+    
     this.load.image('ground', 'assets/ground.png')
     this.load.image('background', 'assets/background.png')
     this.load.image('pipe', 'assets/pipe.png')
@@ -78,6 +78,10 @@ export default class Bird extends Phaser.Scene {
       platforms.create(16 + 36 * i, 832, 'ground')
     }
     platforms.setDepth(10)
+    this.score = this.add.text(this.size.width / 2, 200, '123456789', {
+      fontSize: '40px',
+      fontFamily: 'fb'
+    })
     this.bird = this.physics.add.sprite(400, 300, 'bird')
     this.bird.setDepth(2)
     this.bird.setCollideWorldBounds(true);
