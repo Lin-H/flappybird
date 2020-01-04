@@ -5,10 +5,9 @@ import { Tweens, Physics, Structs } from 'phaser';
 import localForage from 'localforage';
 import problems from './problems'
 
-const store = (localForage as any).default
-const WIDTH = document.documentElement.clientWidth
-
 const HEIGHT = 896 || document.documentElement.clientHeight
+
+type arcadeBody = Phaser.Physics.Arcade.Body
 
 type Problem = {
   question: Question,
@@ -115,7 +114,6 @@ export default class Bird extends Phaser.Scene {
     })
     this.bird.play('birdfly')
     this.input.on('pointerdown', this.fly, this)
-    // this.makePipes()
     // this.initProblems()
     // this.makeProblem()
     this.birdFloat = this.tweens.add({
@@ -157,18 +155,18 @@ export default class Bird extends Phaser.Scene {
     this.birdFloat.stop()
     this.bird.play('birdfly')
     this.bird.setAngle(-25)
-    this.birdTween.resume()
+    this.birdTween.play()
     this.bird.setVelocityY(-700)
     this.timer = setInterval(this.makePipes.bind(this), 2000)
   }
   die() {
     this.status = Status.end
-    this.input.off('pointerdown', this.fly)
-    this.birdTween.stop()
+    this.birdTween.stop(1)
     this.bird.setAngle(90)
     this.bird.anims.stop()
     // 停止所有水管移动
     this.pipes.setVelocityX(0)
+    this.stopPipes()
     // todo 死亡时候先设置分数，再打开排行榜
     this.setGrade(+new Date).then(() => this.openEndPanel())
   }
@@ -196,13 +194,12 @@ export default class Bird extends Phaser.Scene {
       if (this.status === Status.end) return
       clearTimeout(timer)
       this.die()
-      this.stopPipes()
     })
   }
 
   // about problems START
   initProblems () {
-    this.problems = JSON.parse(JSON.stringify(problems))
+    this.problems = problems.slice()
   }
   makeProblem () {
     this.problem = this.chooseProblem()
@@ -215,7 +212,7 @@ export default class Bird extends Phaser.Scene {
   }
   makeQuestion () {
     this.problem.question.instance = this.add.text(
-      WIDTH,
+      this.size.width,
       HEIGHT / 2 - 60,
       this.problem.question.label,
       {
@@ -231,7 +228,7 @@ export default class Bird extends Phaser.Scene {
   makeAnswer () {
     this.problem.answers.forEach((item, index) => {
       item.instance = this.add.text(
-        WIDTH + this.problem.question.label.length * 55, 
+        this.size.width + this.problem.question.label.length * 55, 
         HEIGHT / (this.problem.answers.length + 1) * (index + 1) - 100,
         item.label, 
         { 
@@ -264,15 +261,15 @@ export default class Bird extends Phaser.Scene {
       }) 
     })
   }
-  makeArcadeInstance (instance: Phaser.GameObjects.Text) {
+  makeArcadeInstance (instance: Phaser.GameObjects.Text): arcadeBody {
     this.physics.world.enable(instance) 
-    let body = instance.body as Phaser.Physics.Arcade.Body
+    let body = instance.body as arcadeBody
     body.setAllowGravity(false)
     body.setImmovable()
     body.setVelocityX(-200)
     return body
   }
-  refreshProblem (body) {
+  refreshProblem (body: arcadeBody) {
     body.world.removeListener('worldbounds')
     this.destroyProblem()
     this.makeProblem() // todo 创建水管
@@ -332,16 +329,13 @@ export default class Bird extends Phaser.Scene {
     this.endLayer.setVisible(true)
   }
   // 设置分数
-  setGrade(grade) {
-    return new Promise(resolve => {
-      localForage.getItem(this.currentUser).then(data => {
-        // 取最高分存入
-        if (grade > data) {
-          localForage.setItem(this.currentUser, grade).then(resolve)
-        } else {
-          resolve()
-        }
-      })
+  setGrade(grade: Number) {
+    return localForage.getItem(this.currentUser).then(data => {
+      // 取最高分存入
+      if (grade > data) {
+        return localForage.setItem(this.currentUser, grade)
+      }
+      return Promise.resolve<Number>(0)
     })
   }
 }
