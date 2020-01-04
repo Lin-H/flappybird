@@ -11,12 +11,165 @@
         height: 100vh;
         width: 100vw;
         overflow: hidden;
+        font-size: 16px;
       }
       canvas {
         display: block;
       }
+      #start, #end {
+        transform: none !important;
+        width: 100%;
+        height: 100%;
+        display: none;
+      }
+      .cover {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(0, 0, 0, 0.6);
+      }
+      .cover.is-end {
+        flex-direction: column;
+      }
+      .name-input {
+        outline: none;
+        vertical-align: middle;
+        border-radius: 5px;
+        border: dashed 0.2em #9ce659;
+        background-color: transparent;
+        width: 3rem;
+        height: 0.4rem;
+        font-size: 0.3rem;
+        color: #faac36;
+        text-align: center;
+        padding: 0.1rem;
+      }
+      .start-button {
+        outline: none;
+        vertical-align: middle;
+        border: none;
+        border-radius: 50%;
+        width: 0.7rem;
+        height: 0.7rem;
+        cursor: pointer;
+        margin-left: 0.2rem;
+        background: url("./assets/start.svg") no-repeat center/contain;
+      }
+      .over-text {
+        font-size: 0.3rem;
+        color: white;
+      }
+      .grade-container {
+        color: #faac36;
+        font-size: 0.25rem;
+        margin-top: 0.05rem;
+      }
+      .grade {
+        margin-top: 0.05rem;
+        position: relative;
+        padding: 0.3rem;
+        width: 3.2rem;
+        height: 3.5rem;
+        border: solid 0.02rem #faac36;
+        overflow: hidden;
+      }
+      .border-left-top {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 0.4rem;
+        height: 0.4rem;
+        background: url("./assets/border.svg") no-repeat center/contain;
+      }
+      .border-right-top {
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 0.4rem;
+        height: 0.4rem;
+        background: url("./assets/border.svg") no-repeat center/contain;
+        transform: rotateZ(90deg);
+        transform-origin: center;
+      }
+      .border-left-bottom {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 0.4rem;
+        height: 0.4rem;
+        background: url("./assets/border.svg") no-repeat center/contain;
+        transform: rotateZ(-90deg);
+        transform-origin: center;
+      }
+      .border-right-bottom {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        width: 0.4rem;
+        height: 0.4rem;
+        background: url("./assets/border.svg") no-repeat center/contain;
+        transform: rotateZ(180deg);
+        transform-origin: center;
+      }
+      .grade-title {
+        text-align: center;
+        font-size: 0.2rem;
+      }
+      .grade-list {
+        font-size: 0.135rem;
+      }
+      .grade-list div {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .grade-list span:first-child {
+        display: inline-block;
+        width: 2rem;
+      }
+      .replay-button {
+        position: absolute;
+        right: 2rem;
+        top: calc(50% - 0.3rem);
+        cursor: pointer;
+        width: 0.6rem;
+        height: 0.6rem;
+        background: url("./assets/replay.svg") no-repeat center/contain;
+      }
     </style>
   </head>
-  <body>
+  <body id="body">
+  <div id="start">
+    <div class="cover">
+      <input type="text" class="name-input" maxlength="11" placeholder="请输入您的名字"/>
+      <button class="start-button"></button>
+    </div>
+  </div>
+  <div id="end">
+    <div class="cover is-end">
+      <div class="replay-button"></div>
+      <div class="over-text">游戏结束</div>
+      <div class="grade-container">
+        <div class="grade-title">排行榜（前20）</div>
+        <div class="grade">
+          <div class="border-left-top"></div>
+          <div class="border-right-top"></div>
+          <div class="border-left-bottom"></div>
+          <div class="border-right-bottom"></div>
+          <div class="grade-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const setFontSize = () => {
+      document.documentElement.style.fontSize = `${document.documentElement.clientWidth / 10}px`
+    }
+    setFontSize()
+    window.addEventListener('resize', setFontSize)
+  </script>
   </body>
 </html>
