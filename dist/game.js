@@ -2929,7 +2929,8 @@ var MyGame = (function () {
 	        this.bird.anims.stop();
 	        // 停止所有水管移动
 	        this.pipes.setVelocityX(0);
-	        this.openEndPanel();
+	        // todo 死亡时候先设置分数，再打开排行榜
+	        this.setGrade(+new Date).then(() => this.openEndPanel());
 	    }
 	    makePipes(gap = 200) {
 	        let up = this.physics.add.image(this.size.width + 100, 0, 'pipe');
@@ -2977,15 +2978,10 @@ var MyGame = (function () {
 	                if (!userName)
 	                    return alert('姓名不能为空');
 	                localforage.getItem(userName).then((data) => {
-	                    if (data === null) {
-	                        // 新建用户
-	                        localforage.setItem(userName, 0).then(() => {
-	                            this.startLayer.setVisible(false);
-	                        });
-	                    }
-	                    else {
-	                        alert('这个姓名被占用了，请换个名字吧');
-	                    }
+	                    // 新建用户数据
+	                    data === null && localforage.setItem(userName, 0);
+	                    this.currentUser = userName;
+	                    this.startLayer.setVisible(false);
 	                });
 	            });
 	        }
@@ -3010,6 +3006,20 @@ var MyGame = (function () {
 	            document.querySelector('.grade-list').innerHTML = html;
 	        });
 	        this.endLayer.setVisible(true);
+	    }
+	    // 设置分数
+	    setGrade(grade) {
+	        return new Promise(resolve => {
+	            localforage.getItem(this.currentUser).then(data => {
+	                // 取最高分存入
+	                if (grade > data) {
+	                    localforage.setItem(this.currentUser, grade).then(resolve);
+	                }
+	                else {
+	                    resolve();
+	                }
+	            });
+	        });
 	    }
 	}
 	const config = {
