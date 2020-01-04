@@ -67,7 +67,7 @@ export default class Bird extends Phaser.Scene {
 
   create() {
     // 初始化数据
-    this.openStartPanel()
+    // this.openStartPanel()
     this.pipes = this.physics.add.group()
     this.size = this.scale.baseSize
     for (let i = 0; i < Math.ceil(this.size.width / 768); i++) {
@@ -220,7 +220,8 @@ export default class Bird extends Phaser.Scene {
         color: '#000'
       }
     )
-    this.makeArcadeInstance(this.problem.question.instance)
+    let body = this.makeArcadeInstance(this.problem.question.instance)
+    body.setImmovable()
     this.physics.add.collider(this.bird, this.problem.question.instance, () => {
       this.fly()
     })
@@ -228,11 +229,11 @@ export default class Bird extends Phaser.Scene {
   makeAnswer () {
     this.problem.answers.forEach((item, index) => {
       item.instance = this.add.text(
-        this.size.width + this.problem.question.label.length * 55, 
+        this.size.width + this.problem.question.instance.width + 500, 
         HEIGHT / (this.problem.answers.length + 1) * (index + 1) - 100,
         item.label, 
         { 
-          fontSize: '20px',
+          fontSize: '28px',
           color: '#000' 
         }
       )
@@ -240,7 +241,7 @@ export default class Bird extends Phaser.Scene {
       // 开启答案与左墙壁的碰撞检测，用于未作答情况
       body.setCollideWorldBounds(true)
       body.onWorldBounds = true
-      body.world.setBoundsCollision(true, false, false, false)
+      body.world.setBoundsCollision(true, false, true, true)
       body.world.on(
         "worldbounds",
         body => {
@@ -257,6 +258,7 @@ export default class Bird extends Phaser.Scene {
         } else {
           console.log('错误')
         }
+        this.bird.setVelocityX(0) // 防止小鸟被反作用力反弹
         this.refreshProblem(body)
       }) 
     })
@@ -265,14 +267,14 @@ export default class Bird extends Phaser.Scene {
     this.physics.world.enable(instance) 
     let body = instance.body as arcadeBody
     body.setAllowGravity(false)
-    body.setImmovable()
     body.setVelocityX(-200)
     return body
   }
   refreshProblem (body: arcadeBody) {
     body.world.removeListener('worldbounds')
     this.destroyProblem()
-    this.makeProblem() // todo 创建水管
+    this.makeProblem() // todo 删除掉这行
+    console.log('创建水管')
   }
   destroyProblem () {
     this.problem.question.instance.destroy()
