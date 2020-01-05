@@ -74,7 +74,7 @@ export default class Bird extends Phaser.Scene {
 
   create() {
     // 初始化数据
-    // this.openStartPanel()
+    this.openStartPanel()
     this.pipes = this.physics.add.group()
     this.size = this.scale.baseSize
     scorePoint = this.size.width / 3
@@ -200,8 +200,8 @@ export default class Bird extends Phaser.Scene {
     this.stopPipes()
     timedEvent.destroy()
     timedAlive.destroy()
-    // todo 死亡时候先设置分数，再打开排行榜
-    this.setGrade(+new Date).then(() => this.openEndPanel())
+    // 死亡时候先设置分数，再打开排行榜
+    this.setGrade(this.score).then(() => this.openEndPanel())
   }
   makePipes(gap = 300) { // todo gap 原200，改为300方便调试
     let up = this.physics.add.image(this.size.width + 100, 0, 'pipe')
