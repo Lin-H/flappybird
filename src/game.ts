@@ -91,13 +91,11 @@ export default class Bird extends Phaser.Scene {
       fontFamily: 'fb',
       align: 'center'
     })
-    this.setScore(0)
     this.scoreText.setDepth(9)
     this.scoreText.setOrigin(.5, .5)
     this.bird = this.physics.add.sprite(0, 0, 'bird')
     this.bird.setDepth(2)
     this.bird.setCollideWorldBounds(true);
-    (this.bird.body as Physics.Arcade.Body).setAllowGravity(false)
     this.birdCollider = this.physics.add.collider(this.bird, platforms, () => {
       if (this.status === Status.end) return
       this.die()
@@ -128,8 +126,6 @@ export default class Bird extends Phaser.Scene {
         }
       }
     })
-    this.bird.play('birdfly')
-    this.input.on('pointerdown', this.fly, this)
     // this.initProblems()
     // this.makeProblem()
     this.birdFloat = this.tweens.add({
@@ -161,6 +157,12 @@ export default class Bird extends Phaser.Scene {
   update() {
   }
   ready() { // 进入准备阶段
+    (this.bird.body as Physics.Arcade.Body).setAllowGravity(false)
+    this.bird.setAngle(0)
+    this.birdFloat.restart()
+    this.pipes.clear(true, true) // 重新初始化水管
+    firstAlivePipe = null
+    this.setScore(0)
     this.bird.play('birdfly')
     this.bird.setPosition(this.size.width / 3, 300)
     this.status = Status.ready
@@ -222,8 +224,10 @@ export default class Bird extends Phaser.Scene {
     down.setVelocityX(-200)
     up.setVelocityX(-200)
     let timer = setTimeout(() => {
-      this.pipes.remove(up)
-      this.pipes.remove(down)
+      if (up.x < -100) {
+        this.pipes.remove(up, true, true)
+        this.pipes.remove(down, true, true)
+      }
     }, 10000)
     this.physics.add.collider(this.bird, [down, up], () => {
       if (this.status === Status.end) return
@@ -352,6 +356,7 @@ export default class Bird extends Phaser.Scene {
       document.querySelector('.replay-button').addEventListener('click', () => {
         this.endLayer.setVisible(false)
         this.openStartPanel()
+        this.ready()
       })
     }
     const gradeList = []
