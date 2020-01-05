@@ -7,6 +7,7 @@ const HEIGHT = 896 || document.documentElement.clientHeight
 
 let scorePoint = 0
 let timedEvent: Phaser.Time.TimerEvent
+let timedAlive: Phaser.Time.TimerEvent
 let firstAlivePipe: Physics.Arcade.Image = null
 
 type arcadeBody = Phaser.Physics.Arcade.Body
@@ -173,10 +174,18 @@ export default class Bird extends Phaser.Scene {
     this.birdTween.play()
     this.bird.setVelocityY(-700)
     this.timer = setInterval(this.makePipes.bind(this), 2000)
+    this.makePipes()
     // 使用定时器来计算小鸟是否通过水管，update过于频繁
     timedEvent = this.time.addEvent({
       delay: 200,
       callback: this.checkPass,
+      loop: true,
+      callbackScope: this
+    })
+    // 计时存活
+    timedAlive = this.time.addEvent({
+      delay: 1000,
+      callback: this.aliveScore,
       loop: true,
       callbackScope: this
     })
@@ -190,6 +199,7 @@ export default class Bird extends Phaser.Scene {
     this.pipes.setVelocityX(0)
     this.stopPipes()
     timedEvent.destroy()
+    timedAlive.destroy()
     // todo 死亡时候先设置分数，再打开排行榜
     this.setGrade(+new Date).then(() => this.openEndPanel())
   }
@@ -372,6 +382,9 @@ export default class Bird extends Phaser.Scene {
   addScore(score: number) { // 加分或加负分
     this.score += score
     this.scoreText.setText(this.score + '')
+  }
+  aliveScore() { // 存活加分
+    this.addScore(1)
   }
   checkPass() {
     if (this.pipes.getLength() <= 0) return
