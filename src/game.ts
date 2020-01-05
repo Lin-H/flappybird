@@ -5,6 +5,10 @@ import problems from './problems'
 
 const HEIGHT = 896 || document.documentElement.clientHeight
 
+let scorePoint = 0
+let timedEvent: Phaser.Time.TimerEvent
+let firstAlivePipe: Physics.Arcade.Image = null
+
 type arcadeBody = Phaser.Physics.Arcade.Body
 
 type Problem = {
@@ -45,11 +49,13 @@ export default class Bird extends Phaser.Scene {
   birdFloat: Tweens.Tween
   pipes: Phaser.Physics.Arcade.Group
   currentUser: string
-  score: Phaser.GameObjects.Text
+  scoreText: Phaser.GameObjects.Text
+  score: number
 
   constructor() {
     super('Bird')
     this.status = Status.ready
+    this.score = 0
   }
 
   preload() {
@@ -70,6 +76,7 @@ export default class Bird extends Phaser.Scene {
     // this.openStartPanel()
     this.pipes = this.physics.add.group()
     this.size = this.scale.baseSize
+    scorePoint = this.size.width / 3
     for (let i = 0; i < Math.ceil(this.size.width / 768); i++) {
       this.add.image(i * 768 + 384 - i, 320, 'background')  // 图片拼接会有间隙
     }
@@ -78,11 +85,15 @@ export default class Bird extends Phaser.Scene {
       platforms.create(16 + 36 * i, 832, 'ground')
     }
     platforms.setDepth(10)
-    this.score = this.add.text(this.size.width / 2, 200, '123456789', {
-      fontSize: '40px',
-      fontFamily: 'fb'
+    this.scoreText = this.add.text(this.size.width / 2, 100, '0', {
+      fontSize: '70px',
+      fontFamily: 'fb',
+      align: 'center'
     })
-    this.bird = this.physics.add.sprite(400, 300, 'bird')
+    this.setScore(0)
+    this.scoreText.setDepth(9)
+    this.scoreText.setOrigin(.5, .5)
+    this.bird = this.physics.add.sprite(0, 0, 'bird')
     this.bird.setDepth(2)
     this.bird.setCollideWorldBounds(true);
     (this.bird.body as Physics.Arcade.Body).setAllowGravity(false)
@@ -150,7 +161,7 @@ export default class Bird extends Phaser.Scene {
   }
   ready() { // 进入准备阶段
     this.bird.play('birdfly')
-    this.bird.setPosition(400, 300)
+    this.bird.setPosition(this.size.width / 3, 300)
     this.status = Status.ready
   }
   start() {
@@ -162,6 +173,13 @@ export default class Bird extends Phaser.Scene {
     this.birdTween.play()
     this.bird.setVelocityY(-700)
     this.timer = setInterval(this.makePipes.bind(this), 2000)
+    // 使用定时器来计算小鸟是否通过水管，update过于频繁
+    timedEvent = this.time.addEvent({
+      delay: 200,
+      callback: this.checkPass,
+      loop: true,
+      callbackScope: this
+    })
   }
   die() {
     this.status = Status.end
@@ -171,16 +189,19 @@ export default class Bird extends Phaser.Scene {
     // 停止所有水管移动
     this.pipes.setVelocityX(0)
     this.stopPipes()
+    timedEvent.destroy()
     // todo 死亡时候先设置分数，再打开排行榜
     this.setGrade(+new Date).then(() => this.openEndPanel())
   }
-  makePipes(gap = 200) {
+  makePipes(gap = 300) { // todo gap 原200，改为300方便调试
     let up = this.physics.add.image(this.size.width + 100, 0, 'pipe')
+    up.setName('up')
     up.setFlipY(true)
     let height = up.height
     let randomHeight = Math.ceil(Math.random() * (this.size.height - 300 - gap)) -700 + height /2
     up.y = randomHeight
     let down = this.physics.add.image(this.size.width + 100, 0, 'pipe')
+    down.name = 'down'
     down.y = up.y + gap + height
     this.pipes.addMultiple([up, down])
     // 目前Phaser有bug，physics.body的类型不正确
@@ -344,6 +365,32 @@ export default class Bird extends Phaser.Scene {
       return Promise.resolve<Number>(0)
     })
   }
+  setScore(score: number) {
+    this.score = score
+    this.scoreText.setText(this.score + '')
+  }
+  addScore(score: number) { // 加分或加负分
+    this.score += score
+    this.scoreText.setText(this.score + '')
+  }
+  checkPass() {
+    if (this.pipes.getLength() <= 0) return
+    if (!firstAlivePipe) {
+      firstAlivePipe = this.pipes.getFirstAlive()
+      // 垂直方向上只判断一根水管
+      if (firstAlivePipe.name == 'down') {
+        firstAlivePipe.setActive(false)
+        firstAlivePipe = null
+        return
+      }
+    }
+    let x = firstAlivePipe.x
+    if (x > this.size.width / 3) return
+    // 小鸟已过水管中间
+    this.addScore(10)
+    firstAlivePipe.setActive(false)
+    firstAlivePipe = null
+  }
 }
 
 const config = {
@@ -360,7 +407,7 @@ const config = {
     default: 'arcade',
     arcade: {
       gravity: { y: 2700 },
-      debug: false
+      debug: true
     }
   },
   parent: 'body',
