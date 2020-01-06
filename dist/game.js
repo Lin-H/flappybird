@@ -4123,6 +4123,8 @@ var MyGame = (function () {
 	const problemProint = 15;
 	let timedEvent;
 	let timedAlive;
+	let stopTimer;
+	let makeProblemTimer;
 	let firstAlivePipe = null;
 	var Status;
 	(function (Status) {
@@ -4239,6 +4241,7 @@ var MyGame = (function () {
 	        this.bird.play('birdfly');
 	        this.bird.setPosition(this.size.width / 3, 300);
 	        this.initProblems(); // 重新初始化题目
+	        this.destroyProblem();
 	        this.status = Status.ready;
 	    }
 	    start() {
@@ -4277,6 +4280,8 @@ var MyGame = (function () {
 	        // 停止所有水管移动
 	        this.pipes.setVelocityX(0);
 	        this.stopPipes();
+	        clearTimeout(stopTimer);
+	        clearTimeout(makeProblemTimer);
 	        this.stopProblem();
 	        timedEvent.destroy();
 	        timedAlive.destroy();
@@ -4286,16 +4291,14 @@ var MyGame = (function () {
 	    makePipes() {
 	        this.makePipe();
 	        this.timer = setInterval(this.makePipe.bind(this), 2000);
-	        setTimeout(() => {
-	            if (this.status === Status.end)
-	                return;
+	        stopTimer = setTimeout(() => {
 	            this.stopPipes();
-	            setTimeout(() => {
+	            makeProblemTimer = setTimeout(() => {
 	                this.makeProblem();
 	            }, 3000);
 	        }, 10000);
 	    }
-	    makePipe(gap = 300) {
+	    makePipe(gap = 500) {
 	        let up = this.physics.add.image(this.size.width + 100, 0, 'pipe');
 	        up.setName('up');
 	        up.setFlipY(true);
@@ -4397,23 +4400,29 @@ var MyGame = (function () {
 	        timedEvent.paused = false;
 	    }
 	    stopProblem() {
+	        if (!this.problem)
+	            return;
 	        let questionInstance = this.problem.question.instance;
 	        if (questionInstance) {
 	            let questionBody = questionInstance.body;
-	            questionBody.setVelocityX(0);
+	            questionBody && questionBody.setVelocityX(0);
 	        }
 	        this.problem.answers.forEach(item => {
 	            let answerInstance = item.instance;
 	            if (answerInstance) {
 	                let answerBody = answerInstance.body;
-	                answerBody.setVelocityX(0);
+	                answerBody && answerBody.setVelocityX(0);
 	            }
 	        });
 	    }
 	    destroyProblem() {
-	        this.problem.question.instance.destroy();
+	        if (!this.problem)
+	            return;
+	        let questionInstance = this.problem.question.instance;
+	        questionInstance && this.problem.question.instance.destroy();
 	        this.problem.answers.forEach(item => {
-	            item.instance.destroy();
+	            let answerInstance = item.instance;
+	            answerInstance && answerInstance.destroy();
 	        });
 	    }
 	    // about problems END
@@ -4483,7 +4492,7 @@ var MyGame = (function () {
 	    checkPass() {
 	        if (this.pipes.getLength() <= 0)
 	            return;
-	        // 即将穿过最后一组水管进入答题
+	        // 穿过最后一组水管进入答题
 	        if (this.pipes.getChildren().length > 2 && !this.pipes.getChildren().filter(children => children.active).length) {
 	            timedEvent.paused = true;
 	            return;
