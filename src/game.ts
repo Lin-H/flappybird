@@ -6,6 +6,7 @@ import problems from './problems'
 const HEIGHT = 896 || document.documentElement.clientHeight
 
 let scorePoint = 0
+const problemProint = 15
 let timedEvent: Phaser.Time.TimerEvent
 let timedAlive: Phaser.Time.TimerEvent
 let firstAlivePipe: Physics.Arcade.Image = null
@@ -30,7 +31,7 @@ type Answer = {
 
 enum Status {
   ready,
-  palying,
+  playing,
   end
 }
 
@@ -59,8 +60,7 @@ export default class Bird extends Phaser.Scene {
     this.score = 0
   }
 
-  preload() {
-    
+  preload() { 
     this.load.image('ground', 'assets/ground.png')
     this.load.image('background', 'assets/background.png')
     this.load.image('pipe', 'assets/pipe.png')
@@ -126,8 +126,6 @@ export default class Bird extends Phaser.Scene {
         }
       }
     })
-    // this.initProblems()
-    // this.makeProblem()
     this.birdFloat = this.tweens.add({
       targets: this.bird,
       delay: 0,
@@ -148,7 +146,7 @@ export default class Bird extends Phaser.Scene {
         case Status.ready: {
           return this.start()
         }
-        case Status.palying: {
+        case Status.playing: {
           return this.fly()
         }
       }
@@ -165,17 +163,17 @@ export default class Bird extends Phaser.Scene {
     this.setScore(0)
     this.bird.play('birdfly')
     this.bird.setPosition(this.size.width / 3, 300)
+    this.initProblems() // 重新初始化题目
     this.status = Status.ready
   }
   start() {
-    this.status = Status.palying;
+    this.status = Status.playing;
     (this.bird.body as Physics.Arcade.Body).setAllowGravity()
     this.birdFloat.stop()
     this.bird.play('birdfly')
     this.bird.setAngle(-25)
     this.birdTween.play()
     this.bird.setVelocityY(-700)
-    this.timer = setInterval(this.makePipes.bind(this), 2000)
     this.makePipes()
     // 使用定时器来计算小鸟是否通过水管，update过于频繁
     timedEvent = this.time.addEvent({
@@ -192,6 +190,10 @@ export default class Bird extends Phaser.Scene {
       callbackScope: this
     })
   }
+  fly() {
+    this.birdTween.restart()
+    this.bird.setVelocityY(-700)
+  }
   die() {
     this.status = Status.end
     this.birdTween.stop(1)
@@ -200,12 +202,24 @@ export default class Bird extends Phaser.Scene {
     // 停止所有水管移动
     this.pipes.setVelocityX(0)
     this.stopPipes()
+    this.stopProblem()
     timedEvent.destroy()
     timedAlive.destroy()
     // 死亡时候先设置分数，再打开排行榜
     this.setGrade(this.score).then(() => this.openEndPanel())
   }
-  makePipes(gap = 300) { // todo gap 原200，改为300方便调试
+  makePipes () {
+    this.makePipe()
+    this.timer = setInterval(this.makePipe.bind(this), 2000)
+    setTimeout(() => { 
+      if (this.status === Status.end) return
+      this.stopPipes()
+      setTimeout(() => {
+        this.makeProblem()
+      }, 3000)
+    }, 10000)
+  }
+  makePipe(gap = 300) { // todo gap 原200，改为300方便调试
     let up = this.physics.add.image(this.size.width + 100, 0, 'pipe')
     up.setName('up')
     up.setFlipY(true)
@@ -234,6 +248,9 @@ export default class Bird extends Phaser.Scene {
       clearTimeout(timer)
       this.die()
     })
+  }
+  stopPipes() {
+    clearInterval(this.timer)
   }
 
   // about problems START
@@ -293,9 +310,9 @@ export default class Bird extends Phaser.Scene {
       // 开启答案与小鸟的碰撞检测，用于作答情况
       this.physics.add.collider(this.bird, item.instance, () => {
         if (item.isCorrect) {
-          console.log('正确')
+          this.addScore(problemProint)
         } else {
-          console.log('错误')
+          this.addScore(-problemProint)
         }
         this.bird.setVelocityX(0) // 防止小鸟被反作用力反弹
         this.refreshProblem(body)
@@ -312,8 +329,23 @@ export default class Bird extends Phaser.Scene {
   refreshProblem (body: arcadeBody) {
     body.world.removeListener('worldbounds')
     this.destroyProblem()
-    this.makeProblem() // todo 删除掉这行
-    console.log('创建水管')
+    if (this.status === Status.end) return
+    this.makePipes()
+    timedEvent.paused = false
+  }
+  stopProblem () {
+    let questionInstance = this.problem.question.instance
+    if (questionInstance) {
+      let questionBody = questionInstance.body as arcadeBody
+      questionBody.setVelocityX(0)
+    }
+    this.problem.answers.forEach(item => {
+      let answerInstance = item.instance
+      if (answerInstance) {
+        let answerBody = answerInstance.body as arcadeBody
+        answerBody.setVelocityX(0)
+      }
+    })
   }
   destroyProblem () {
     this.problem.question.instance.destroy()
@@ -323,13 +355,6 @@ export default class Bird extends Phaser.Scene {
   }
   // about problems END
 
-  stopPipes() {
-    clearInterval(this.timer)
-  }
-  fly() {
-    this.birdTween.restart()
-    this.bird.setVelocityY(-700)
-  }
   // 打开游戏开始面板
   openStartPanel() {
     if (!this.startLayer) {
@@ -393,6 +418,11 @@ export default class Bird extends Phaser.Scene {
   }
   checkPass() {
     if (this.pipes.getLength() <= 0) return
+    // 即将穿过最后一组水管进入答题
+    if (this.pipes.getChildren().length > 2 && !this.pipes.getChildren().filter(children => children.active).length) {
+      timedEvent.paused = true
+      return
+    }
     if (!firstAlivePipe) {
       firstAlivePipe = this.pipes.getFirstAlive()
       // 垂直方向上只判断一根水管
