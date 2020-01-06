@@ -4118,18 +4118,25 @@ var MyGame = (function () {
 	    }
 	];
 
-	/// <reference >
 	const HEIGHT = 896 || document.documentElement.clientHeight;
+	let scorePoint = 0;
+	const problemProint = 15;
+	let timedEvent;
+	let timedAlive;
+	let stopTimer;
+	let makeProblemTimer;
+	let firstAlivePipe = null;
 	var Status;
 	(function (Status) {
 	    Status[Status["ready"] = 0] = "ready";
-	    Status[Status["palying"] = 1] = "palying";
+	    Status[Status["playing"] = 1] = "playing";
 	    Status[Status["end"] = 2] = "end";
 	})(Status || (Status = {}));
 	class Bird extends Phaser.Scene {
 	    constructor() {
 	        super('Bird');
 	        this.status = Status.ready;
+	        this.score = 0;
 	    }
 	    preload() {
 	        this.load.image('ground', 'assets/ground.png');
@@ -4144,9 +4151,10 @@ var MyGame = (function () {
 	    }
 	    create() {
 	        // 初始化数据
-	        // this.openStartPanel()
+	        this.openStartPanel();
 	        this.pipes = this.physics.add.group();
 	        this.size = this.scale.baseSize;
+	        scorePoint = this.size.width / 3;
 	        for (let i = 0; i < Math.ceil(this.size.width / 768); i++) {
 	            this.add.image(i * 768 + 384 - i, 320, 'background'); // 图片拼接会有间隙
 	        }
@@ -4155,10 +4163,16 @@ var MyGame = (function () {
 	            platforms.create(16 + 36 * i, 832, 'ground');
 	        }
 	        platforms.setDepth(10);
-	        this.bird = this.physics.add.sprite(400, 300, 'bird');
+	        this.scoreText = this.add.text(this.size.width / 2, 100, '0', {
+	            fontSize: '70px',
+	            fontFamily: 'fb',
+	            align: 'center'
+	        });
+	        this.scoreText.setDepth(9);
+	        this.scoreText.setOrigin(.5, .5);
+	        this.bird = this.physics.add.sprite(0, 0, 'bird');
 	        this.bird.setDepth(2);
 	        this.bird.setCollideWorldBounds(true);
-	        this.bird.body.setAllowGravity(false);
 	        this.birdCollider = this.physics.add.collider(this.bird, platforms, () => {
 	            if (this.status === Status.end)
 	                return;
@@ -4189,10 +4203,6 @@ var MyGame = (function () {
 	                }
 	            }
 	        });
-	        this.bird.play('birdfly');
-	        this.input.on('pointerdown', this.fly, this);
-	        // this.initProblems()
-	        // this.makeProblem()
 	        this.birdFloat = this.tweens.add({
 	            targets: this.bird,
 	            delay: 0,
@@ -4213,7 +4223,7 @@ var MyGame = (function () {
 	                case Status.ready: {
 	                    return this.start();
 	                }
-	                case Status.palying: {
+	                case Status.playing: {
 	                    return this.fly();
 	                }
 	            }
@@ -4222,19 +4232,45 @@ var MyGame = (function () {
 	    update() {
 	    }
 	    ready() {
+	        this.bird.body.setAllowGravity(false);
+	        this.bird.setAngle(0);
+	        this.birdFloat.restart();
+	        this.pipes.clear(true, true); // 重新初始化水管
+	        firstAlivePipe = null;
+	        this.setScore(0);
 	        this.bird.play('birdfly');
-	        this.bird.setPosition(400, 300);
+	        this.bird.setPosition(this.size.width / 3, 300);
+	        this.initProblems(); // 重新初始化题目
+	        this.destroyProblem();
 	        this.status = Status.ready;
 	    }
 	    start() {
-	        this.status = Status.palying;
+	        this.status = Status.playing;
 	        this.bird.body.setAllowGravity();
 	        this.birdFloat.stop();
 	        this.bird.play('birdfly');
 	        this.bird.setAngle(-25);
 	        this.birdTween.play();
 	        this.bird.setVelocityY(-700);
-	        this.timer = setInterval(this.makePipes.bind(this), 2000);
+	        this.makePipes();
+	        // 使用定时器来计算小鸟是否通过水管，update过于频繁
+	        timedEvent = this.time.addEvent({
+	            delay: 200,
+	            callback: this.checkPass,
+	            loop: true,
+	            callbackScope: this
+	        });
+	        // 计时存活
+	        timedAlive = this.time.addEvent({
+	            delay: 1000,
+	            callback: this.aliveScore,
+	            loop: true,
+	            callbackScope: this
+	        });
+	    }
+	    fly() {
+	        this.birdTween.restart();
+	        this.bird.setVelocityY(-700);
 	    }
 	    die() {
 	        this.status = Status.end;
@@ -4244,16 +4280,33 @@ var MyGame = (function () {
 	        // 停止所有水管移动
 	        this.pipes.setVelocityX(0);
 	        this.stopPipes();
-	        // todo 死亡时候先设置分数，再打开排行榜
-	        this.setGrade(+new Date).then(() => this.openEndPanel());
+	        clearTimeout(stopTimer);
+	        clearTimeout(makeProblemTimer);
+	        this.stopProblem();
+	        timedEvent.destroy();
+	        timedAlive.destroy();
+	        // 死亡时候先设置分数，再打开排行榜
+	        this.setGrade(this.score).then(() => this.openEndPanel());
 	    }
-	    makePipes(gap = 200) {
+	    makePipes() {
+	        this.makePipe();
+	        this.timer = setInterval(this.makePipe.bind(this), 2000);
+	        stopTimer = setTimeout(() => {
+	            this.stopPipes();
+	            makeProblemTimer = setTimeout(() => {
+	                this.makeProblem();
+	            }, 3000);
+	        }, 10000);
+	    }
+	    makePipe(gap = 500) {
 	        let up = this.physics.add.image(this.size.width + 100, 0, 'pipe');
+	        up.setName('up');
 	        up.setFlipY(true);
 	        let height = up.height;
 	        let randomHeight = Math.ceil(Math.random() * (this.size.height - 300 - gap)) - 700 + height / 2;
 	        up.y = randomHeight;
 	        let down = this.physics.add.image(this.size.width + 100, 0, 'pipe');
+	        down.name = 'down';
 	        down.y = up.y + gap + height;
 	        this.pipes.addMultiple([up, down]);
 	        up.body.setAllowGravity(false);
@@ -4263,8 +4316,10 @@ var MyGame = (function () {
 	        down.setVelocityX(-200);
 	        up.setVelocityX(-200);
 	        let timer = setTimeout(() => {
-	            this.pipes.remove(up);
-	            this.pipes.remove(down);
+	            if (up.x < -100) {
+	                this.pipes.remove(up, true, true);
+	                this.pipes.remove(down, true, true);
+	            }
 	        }, 10000);
 	        this.physics.add.collider(this.bird, [down, up], () => {
 	            if (this.status === Status.end)
@@ -4272,6 +4327,9 @@ var MyGame = (function () {
 	            clearTimeout(timer);
 	            this.die();
 	        });
+	    }
+	    stopPipes() {
+	        clearInterval(this.timer);
 	    }
 	    // about problems START
 	    initProblems() {
@@ -4316,10 +4374,10 @@ var MyGame = (function () {
 	            // 开启答案与小鸟的碰撞检测，用于作答情况
 	            this.physics.add.collider(this.bird, item.instance, () => {
 	                if (item.isCorrect) {
-	                    console.log('正确');
+	                    this.addScore(problemProint);
 	                }
 	                else {
-	                    console.log('错误');
+	                    this.addScore(-problemProint);
 	                }
 	                this.bird.setVelocityX(0); // 防止小鸟被反作用力反弹
 	                this.refreshProblem(body);
@@ -4336,23 +4394,38 @@ var MyGame = (function () {
 	    refreshProblem(body) {
 	        body.world.removeListener('worldbounds');
 	        this.destroyProblem();
-	        this.makeProblem(); // todo 删除掉这行
-	        console.log('创建水管');
+	        if (this.status === Status.end)
+	            return;
+	        this.makePipes();
+	        timedEvent.paused = false;
+	    }
+	    stopProblem() {
+	        if (!this.problem)
+	            return;
+	        let questionInstance = this.problem.question.instance;
+	        if (questionInstance) {
+	            let questionBody = questionInstance.body;
+	            questionBody && questionBody.setVelocityX(0);
+	        }
+	        this.problem.answers.forEach(item => {
+	            let answerInstance = item.instance;
+	            if (answerInstance) {
+	                let answerBody = answerInstance.body;
+	                answerBody && answerBody.setVelocityX(0);
+	            }
+	        });
 	    }
 	    destroyProblem() {
-	        this.problem.question.instance.destroy();
+	        if (!this.problem)
+	            return;
+	        let questionInstance = this.problem.question.instance;
+	        questionInstance && this.problem.question.instance.destroy();
 	        this.problem.answers.forEach(item => {
-	            item.instance.destroy();
+	            let answerInstance = item.instance;
+	            answerInstance && answerInstance.destroy();
 	        });
 	    }
 	    // about problems END
-	    stopPipes() {
-	        clearInterval(this.timer);
-	    }
-	    fly() {
-	        this.birdTween.restart();
-	        this.bird.setVelocityY(-700);
-	    }
 	    // 打开游戏开始面板
 	    openStartPanel() {
 	        if (!this.startLayer) {
@@ -4381,6 +4454,7 @@ var MyGame = (function () {
 	            document.querySelector('.replay-button').addEventListener('click', () => {
 	                this.endLayer.setVisible(false);
 	                this.openStartPanel();
+	                this.ready();
 	            });
 	        }
 	        const gradeList = [];
@@ -4404,6 +4478,42 @@ var MyGame = (function () {
 	            return Promise.resolve(0);
 	        });
 	    }
+	    setScore(score) {
+	        this.score = score;
+	        this.scoreText.setText(this.score + '');
+	    }
+	    addScore(score) {
+	        this.score += score;
+	        this.scoreText.setText(this.score + '');
+	    }
+	    aliveScore() {
+	        this.addScore(1);
+	    }
+	    checkPass() {
+	        if (this.pipes.getLength() <= 0)
+	            return;
+	        // 穿过最后一组水管进入答题
+	        if (this.pipes.getChildren().length > 2 && !this.pipes.getChildren().filter(children => children.active).length) {
+	            timedEvent.paused = true;
+	            return;
+	        }
+	        if (!firstAlivePipe) {
+	            firstAlivePipe = this.pipes.getFirstAlive();
+	            // 垂直方向上只判断一根水管
+	            if (firstAlivePipe.name == 'down') {
+	                firstAlivePipe.setActive(false);
+	                firstAlivePipe = null;
+	                return;
+	            }
+	        }
+	        let x = firstAlivePipe.x;
+	        if (x > this.size.width / 3)
+	            return;
+	        // 小鸟已过水管中间
+	        this.addScore(10);
+	        firstAlivePipe.setActive(false);
+	        firstAlivePipe = null;
+	    }
 	}
 	const config = {
 	    type: Phaser.AUTO,
@@ -4419,7 +4529,7 @@ var MyGame = (function () {
 	        default: 'arcade',
 	        arcade: {
 	            gravity: { y: 2700 },
-	            debug: false
+	            debug: true
 	        }
 	    },
 	    parent: 'body',
