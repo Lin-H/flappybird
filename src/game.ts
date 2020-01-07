@@ -373,21 +373,38 @@ export default class Bird extends Phaser.Scene {
   }
   // about problems END
 
+  saveUserName() {
+    const userName = document.querySelector<HTMLInputElement>('.name-input').value.trim()
+    if (!userName) return alert('姓名不能为空')
+    localForage.getItem(userName).then((data) => {
+      // 新建用户数据
+      data === null && localForage.setItem(userName, 0)
+      this.currentUser = userName
+      this.startLayer.setVisible(false)
+    })
+  }
   // 打开游戏开始面板
   openStartPanel() {
     if (!this.startLayer) {
       this.startLayer = this.add.dom(0, 0, '#start')
       this.startLayer.addListener('click')
+      this.startLayer.addListener('keydown')
       this.startLayer.on('click', ({target}) => {
-        if (!target.classList.contains('start-button')) return
-        const userName = document.querySelector<HTMLInputElement>('.name-input').value.trim()
-        if (!userName) return alert('姓名不能为空')
-        localForage.getItem(userName).then((data) => {
-            // 新建用户数据
-            data === null && localForage.setItem(userName, 0)
-            this.currentUser = userName
-            this.startLayer.setVisible(false)
-        })
+        target.classList.contains('start-button') && this.saveUserName()
+        if (target.classList.contains('operation-container')) {
+          const startPanel = document.querySelector('#start')
+          if (startPanel.classList.contains('in-billboard')) {
+            startPanel.classList.remove('in-billboard')
+          } else {
+            startPanel.classList.add('in-billboard')
+            this.openGradeBillboard(true)
+          }
+        }
+      })
+      this.startLayer.on('keydown', e => {
+        if (e.code === 'Enter' && e.target.classList.contains('name-input')) {
+          this.saveUserName()
+        }
       })
     }
     this.startLayer.setVisible(true)
@@ -402,15 +419,7 @@ export default class Bird extends Phaser.Scene {
         this.ready()
       })
     }
-    const gradeList = []
-    localForage.iterate((grade, user) => {
-      gradeList.push({user, grade})
-    }).then(() => {
-      gradeList.sort((a, b) => b.grade - a.grade)
-      let html = ''
-      gradeList.slice(0, 20).forEach(item => html += `<div><span>${item.user}</span><span>${item.grade}</span></div>`)
-      document.querySelector('.grade-list').innerHTML = html
-    })
+    this.openGradeBillboard(false)
     this.endLayer.setVisible(true)
   }
   // 设置分数
@@ -421,6 +430,18 @@ export default class Bird extends Phaser.Scene {
         return localForage.setItem(this.currentUser, grade)
       }
       return Promise.resolve<Number>(0)
+    })
+  }
+  // 打开排行榜
+  openGradeBillboard(isStart) {
+    const gradeList = []
+    localForage.iterate((grade, user) => {
+      gradeList.push({user, grade})
+    }).then(() => {
+      gradeList.sort((a, b) => b.grade - a.grade)
+      let html = ''
+      gradeList.slice(0, 20).forEach(item => html += `<div><span>${item.user}</span><span>${item.grade}</span></div>`)
+      document.querySelector(`.${isStart ? 'start' : 'end'}-grade-billboard`).innerHTML = html
     })
   }
   setScore(score: number) {

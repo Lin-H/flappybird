@@ -151,13 +151,68 @@
         height: 0.6rem;
         background: url("./assets/replay.svg") no-repeat center/contain;
       }
+      .operation-container {
+        position: absolute;
+        right: 0.5rem;
+        top: 0.2rem;
+        color: #faac36;
+        font-size: 0.18rem;
+        cursor: pointer;
+      }
+      .operation-container span {
+        pointer-events: none;
+        vertical-align: middle;
+      }
+      .billboard-icon, .back-icon {
+        pointer-events: none;
+        display: inline-block;
+        height: 0.2rem;
+        width: 0.2rem;
+        vertical-align: middle;
+      }
+      .billboard-icon {
+        background: url("./assets/billboard.svg") no-repeat center/contain;
+      }
+      .back-icon {
+        background: url("./assets/back.svg") no-repeat center/contain;
+      }
+      #start.in-billboard .billboard-button {
+        display: none;
+      }
+      #start:not(.in-billboard) .back-button {
+        display: none;
+      }
+      #start.in-billboard .input-container {
+        display: none;
+      }
+      #start:not(.in-billboard) .grade-container {
+        display: none;
+      }
     </style>
   </head>
   <body id="body">
   <div id="start">
     <div class="cover">
-      <input type="text" class="name-input" maxlength="11" placeholder="请输入您的名字" autofocus/>
-      <button class="start-button"></button>
+      <div class="operation-container">
+        <i class="billboard-icon billboard-button"></i>
+        <i class="back-icon back-button"></i>
+        <span class="billboard-button">排行榜</span>
+        <span class="back-button">返回</span>
+      </div>
+      <div class="input-container">
+        <input type="text" class="name-input" maxlength="11" placeholder="请输入您的名字" autofocus/>
+        <button class="start-button"></button>
+      </div>
+      <div class="grade-container">
+        <div class="grade-title">排行榜</div>
+        <div class="grade">
+          <div class="border-left-top"></div>
+          <div class="border-right-top"></div>
+          <div class="border-left-bottom"></div>
+          <div class="border-right-bottom"></div>
+          <div class="grade-list start-grade-billboard"></div>
+        </div>
+      </div>
     </div>
   </div>
   <div id="end">
@@ -171,7 +226,7 @@
           <div class="border-right-top"></div>
           <div class="border-left-bottom"></div>
           <div class="border-right-bottom"></div>
-          <div class="grade-list"></div>
+          <div class="grade-list end-grade-billboard"></div>
         </div>
       </div>
     </div>
