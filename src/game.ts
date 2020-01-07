@@ -9,8 +9,8 @@ let scorePoint = 0
 const problemProint = 15
 let timedEvent: Phaser.Time.TimerEvent
 let timedAlive: Phaser.Time.TimerEvent
-let stopTimer
-let makeProblemTimer
+let stopPipeTimer: Phaser.Time.TimerEvent
+let makeProblemTimer: Phaser.Time.TimerEvent
 let firstAlivePipe: Physics.Arcade.Image = null
 
 type arcadeBody = Phaser.Physics.Arcade.Body
@@ -164,6 +164,7 @@ export default class Bird extends Phaser.Scene {
     firstAlivePipe = null
     this.setScore(0)
     this.bird.play('birdfly')
+    this.bird.setVelocityX(0)
     this.bird.setPosition(this.size.width / 3, 300)
     this.initProblems() // 重新初始化题目
     this.destroyProblem()
@@ -205,8 +206,8 @@ export default class Bird extends Phaser.Scene {
     // 停止所有水管移动
     this.pipes.setVelocityX(0)
     this.stopPipes()
-    clearTimeout(stopTimer)
-    clearTimeout(makeProblemTimer)
+    stopPipeTimer && stopPipeTimer.destroy()
+    makeProblemTimer && makeProblemTimer.destroy()
     this.stopProblem()
     timedEvent.destroy()
     timedAlive.destroy()
@@ -216,12 +217,12 @@ export default class Bird extends Phaser.Scene {
   makePipes () {
     this.makePipe()
     this.timer = setInterval(this.makePipe.bind(this), 2000)
-    stopTimer = setTimeout(() => { 
-      this.stopPipes()
-      makeProblemTimer = setTimeout(() => {
-        this.makeProblem()
-      }, 3000)
-    }, 10000)
+    stopPipeTimer = this.time.addEvent({
+      delay: 6000,
+      callback: this.switchPipeProblem,
+      loop: false,
+      callbackScope: this
+    })
   }
   makePipe(gap = 500) { // todo gap 原200，改为300方便调试
     let up = this.physics.add.image(this.size.width + 100, 0, 'pipe')
@@ -255,6 +256,15 @@ export default class Bird extends Phaser.Scene {
   }
   stopPipes() {
     clearInterval(this.timer)
+  }
+  switchPipeProblem () {
+    this.stopPipes()
+    makeProblemTimer = this.time.addEvent({
+      delay: 3000,
+      callback: this.makeProblem,
+      loop: false,
+      callbackScope: this
+    })
   }
 
   // about problems START
