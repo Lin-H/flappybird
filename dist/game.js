@@ -3463,7 +3463,7 @@ var MyGame = (function () {
 	    },
 	    {
 	        "question": {
-	            "label": "RFID射频技术多应用与物联网的（）"
+	            "label": "RFID射频技术多应用于物联网的（）"
 	        },
 	        "answers": [
 	            {
@@ -3509,7 +3509,7 @@ var MyGame = (function () {
 	                "isCorrect": true
 	            },
 	            {
-	                "label": "开发性",
+	                "label": "开放性",
 	                "isCorrect": false
 	            },
 	            {
@@ -3783,7 +3783,7 @@ var MyGame = (function () {
 	    },
 	    {
 	        "question": {
-	            "label": "pmgo创建任务单时，填写了内容但未保存，如何找回填写内容"
+	            "label": "PMGO创建任务单时，填写了内容但未保存，如何找回填写内容"
 	        },
 	        "answers": [
 	            {
@@ -3798,7 +3798,7 @@ var MyGame = (function () {
 	    },
 	    {
 	        "question": {
-	            "label": "pmgo中如何快速查看与自己相关的任务单"
+	            "label": "PMGO中如何快速查看与自己相关的任务单"
 	        },
 	        "answers": [
 	            {
@@ -4170,6 +4170,13 @@ var MyGame = (function () {
 	        });
 	        this.scoreText.setDepth(9);
 	        this.scoreText.setOrigin(.5, .5);
+	        this.changeScoreText = this.add.text(this.size.width / 2, 200, '', {
+	            fontSize: '70px',
+	            fontFamily: 'fb',
+	            align: 'center'
+	        });
+	        this.changeScoreText.setDepth(9);
+	        this.changeScoreText.setOrigin(.5, .5);
 	        this.bird = this.physics.add.sprite(0, 0, 'bird');
 	        this.bird.setDepth(2);
 	        this.bird.setCollideWorldBounds(true);
@@ -4230,6 +4237,18 @@ var MyGame = (function () {
 	        }, this);
 	    }
 	    update() {
+	        // 小鸟被题目撞到边界
+	        if (this.status === Status.playing && this.bird.x < 50) {
+	            this.bird.setVelocityX(200);
+	            this.time.addEvent({
+	                delay: 2000,
+	                callback: () => {
+	                    this.bird.setVelocityX(0);
+	                },
+	                loop: false,
+	                callbackScope: this
+	            });
+	        }
 	    }
 	    ready() {
 	        this.bird.body.setAllowGravity(false);
@@ -4362,7 +4381,9 @@ var MyGame = (function () {
 	        let body = this.makeArcadeInstance(this.problem.question.instance);
 	        body.setImmovable();
 	        this.physics.add.collider(this.bird, this.problem.question.instance, () => {
-	            this.fly();
+	            if (this.bird.y < HEIGHT / 2) {
+	                this.fly();
+	            }
 	        });
 	    }
 	    makeAnswer() {
@@ -4384,10 +4405,10 @@ var MyGame = (function () {
 	            // 开启答案与小鸟的碰撞检测，用于作答情况
 	            this.physics.add.collider(this.bird, item.instance, () => {
 	                if (item.isCorrect) {
-	                    this.addScore(problemProint);
+	                    this.addScore(problemProint, true);
 	                }
 	                else {
-	                    this.addScore(-problemProint);
+	                    this.addScore(-problemProint, true);
 	                }
 	                this.bird.setVelocityX(0); // 防止小鸟被反作用力反弹
 	                this.refreshProblem(body);
@@ -4513,9 +4534,21 @@ var MyGame = (function () {
 	        this.score = score;
 	        this.scoreText.setText(this.score + '');
 	    }
-	    addScore(score) {
-	        this.score += score;
-	        this.scoreText.setText(this.score + '');
+	    addScore(addScore, showChange) {
+	        this.setScore(this.score + addScore);
+	        if (showChange) {
+	            const isAdd = addScore > 0;
+	            this.changeScoreText.setColor(isAdd ? '#20a0ff' : '#ff6f6f');
+	            this.changeScoreText.setText(isAdd ? `+${addScore}😄` : addScore + '😪');
+	            this.time.addEvent({
+	                delay: 1000,
+	                callback: () => {
+	                    this.changeScoreText.setText('');
+	                },
+	                loop: false,
+	                callbackScope: this
+	            });
+	        }
 	    }
 	    aliveScore() {
 	        this.addScore(1);

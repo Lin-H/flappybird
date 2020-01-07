@@ -654,7 +654,7 @@ const problems = [
     },
     {
       "question": {
-        "label": "RFID射频技术多应用与物联网的（）"
+        "label": "RFID射频技术多应用于物联网的（）"
       },
       "answers": [
         {
@@ -700,7 +700,7 @@ const problems = [
           "isCorrect": true
         },
         {
-          "label": "开发性",
+          "label": "开放性",
           "isCorrect": false
         },
         {
@@ -974,7 +974,7 @@ const problems = [
     },
     {
       "question": {
-        "label": "pmgo创建任务单时，填写了内容但未保存，如何找回填写内容"
+        "label": "PMGO创建任务单时，填写了内容但未保存，如何找回填写内容"
       },
       "answers": [
         {
@@ -989,7 +989,7 @@ const problems = [
     },
     {
       "question": {
-        "label": "pmgo中如何快速查看与自己相关的任务单"
+        "label": "PMGO中如何快速查看与自己相关的任务单"
       },
       "answers": [
         {
