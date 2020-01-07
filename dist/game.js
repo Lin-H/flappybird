@@ -3509,7 +3509,7 @@ var MyGame = (function () {
 	                "isCorrect": true
 	            },
 	            {
-	                "label": "开发性",
+	                "label": "开放性",
 	                "isCorrect": false
 	            },
 	            {
@@ -4237,6 +4237,18 @@ var MyGame = (function () {
 	        }, this);
 	    }
 	    update() {
+	        // 小鸟被题目撞到边界
+	        if (this.status === Status.playing && this.bird.x < 50) {
+	            this.bird.setVelocityX(200);
+	            this.time.addEvent({
+	                delay: 2000,
+	                callback: () => {
+	                    this.bird.setVelocityX(0);
+	                },
+	                loop: true,
+	                callbackScope: this
+	            });
+	        }
 	    }
 	    ready() {
 	        this.bird.body.setAllowGravity(false);
@@ -4527,7 +4539,7 @@ var MyGame = (function () {
 	        if (showChange) {
 	            const isAdd = addScore > 0;
 	            this.changeScoreText.setColor(isAdd ? '#20a0ff' : '#ff6f6f');
-	            this.changeScoreText.setText(isAdd ? `+${addScore}` : addScore + '');
+	            this.changeScoreText.setText(isAdd ? `+${addScore}😄` : addScore + '😪');
 	            this.time.addEvent({
 	                delay: 1000,
 	                callback: () => {

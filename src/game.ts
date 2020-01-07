@@ -163,6 +163,18 @@ export default class Bird extends Phaser.Scene {
     }, this)
   }
   update() {
+    // 小鸟被题目撞到边界
+    if (this.status === Status.playing && this.bird.x < 50) {
+      this.bird.setVelocityX(200) 
+      this.time.addEvent({
+        delay: 2000,
+        callback: () => {
+          this.bird.setVelocityX(0) 
+        },
+        loop: true,
+        callbackScope: this
+      })
+    }
   }
   ready() { // 进入准备阶段
     (this.bird.body as Physics.Arcade.Body).setAllowGravity(false)
@@ -463,7 +475,7 @@ export default class Bird extends Phaser.Scene {
     if (showChange) {
       const isAdd = addScore > 0
       this.changeScoreText.setColor(isAdd ? '#20a0ff' : '#ff6f6f')
-      this.changeScoreText.setText(isAdd ? `+${addScore}` : addScore + '')
+      this.changeScoreText.setText(isAdd ? `+${addScore}😄` : addScore + '😪')
       this.time.addEvent({
         delay: 1000,
         callback: () => {

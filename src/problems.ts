@@ -700,7 +700,7 @@ const problems = [
           "isCorrect": true
         },
         {
-          "label": "开发性",
+          "label": "开放性",
           "isCorrect": false
         },
         {
