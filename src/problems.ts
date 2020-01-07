@@ -974,7 +974,7 @@ const problems = [
     },
     {
       "question": {
-        "label": "创建任务单时，填写了内容但未保存，如何找回填写内容"
+        "label": "pmgo创建任务单时，填写了内容但未保存，如何找回填写内容"
       },
       "answers": [
         {
@@ -989,7 +989,7 @@ const problems = [
     },
     {
       "question": {
-        "label": "如何快速查看与自己相关的任务单"
+        "label": "pmgo中如何快速查看与自己相关的任务单"
       },
       "answers": [
         {

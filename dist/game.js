@@ -3783,7 +3783,7 @@ var MyGame = (function () {
 	    },
 	    {
 	        "question": {
-	            "label": "创建任务单时，填写了内容但未保存，如何找回填写内容"
+	            "label": "pmgo创建任务单时，填写了内容但未保存，如何找回填写内容"
 	        },
 	        "answers": [
 	            {
@@ -3798,7 +3798,7 @@ var MyGame = (function () {
 	    },
 	    {
 	        "question": {
-	            "label": "如何快速查看与自己相关的任务单"
+	            "label": "pmgo中如何快速查看与自己相关的任务单"
 	        },
 	        "answers": [
 	            {
@@ -4123,7 +4123,7 @@ var MyGame = (function () {
 	const problemProint = 15;
 	let timedEvent;
 	let timedAlive;
-	let stopTimer;
+	let stopPipeTimer;
 	let makeProblemTimer;
 	let firstAlivePipe = null;
 	var Status;
@@ -4239,6 +4239,7 @@ var MyGame = (function () {
 	        firstAlivePipe = null;
 	        this.setScore(0);
 	        this.bird.play('birdfly');
+	        this.bird.setVelocityX(0);
 	        this.bird.setPosition(this.size.width / 3, 300);
 	        this.initProblems(); // 重新初始化题目
 	        this.destroyProblem();
@@ -4280,8 +4281,8 @@ var MyGame = (function () {
 	        // 停止所有水管移动
 	        this.pipes.setVelocityX(0);
 	        this.stopPipes();
-	        clearTimeout(stopTimer);
-	        clearTimeout(makeProblemTimer);
+	        stopPipeTimer && stopPipeTimer.destroy();
+	        makeProblemTimer && makeProblemTimer.destroy();
 	        this.stopProblem();
 	        timedEvent.destroy();
 	        timedAlive.destroy();
@@ -4291,12 +4292,12 @@ var MyGame = (function () {
 	    makePipes() {
 	        this.makePipe();
 	        this.timer = setInterval(this.makePipe.bind(this), 2000);
-	        stopTimer = setTimeout(() => {
-	            this.stopPipes();
-	            makeProblemTimer = setTimeout(() => {
-	                this.makeProblem();
-	            }, 3000);
-	        }, 10000);
+	        stopPipeTimer = this.time.addEvent({
+	            delay: 6000,
+	            callback: this.switchPipeProblem,
+	            loop: false,
+	            callbackScope: this
+	        });
 	    }
 	    makePipe(gap = 500) {
 	        let up = this.physics.add.image(this.size.width + 100, 0, 'pipe');
@@ -4330,6 +4331,15 @@ var MyGame = (function () {
 	    }
 	    stopPipes() {
 	        clearInterval(this.timer);
+	    }
+	    switchPipeProblem() {
+	        this.stopPipes();
+	        makeProblemTimer = this.time.addEvent({
+	            delay: 3000,
+	            callback: this.makeProblem,
+	            loop: false,
+	            callbackScope: this
+	        });
 	    }
 	    // about problems START
 	    initProblems() {
