@@ -4245,7 +4245,7 @@ var MyGame = (function () {
 	                callback: () => {
 	                    this.bird.setVelocityX(0);
 	                },
-	                loop: true,
+	                loop: false,
 	                callbackScope: this
 	            });
 	        }

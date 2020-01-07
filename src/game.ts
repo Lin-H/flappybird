@@ -171,7 +171,7 @@ export default class Bird extends Phaser.Scene {
         callback: () => {
           this.bird.setVelocityX(0) 
         },
-        loop: true,
+        loop: false,
         callbackScope: this
       })
     }
