@@ -54,6 +54,7 @@ export default class Bird extends Phaser.Scene {
   pipes: Phaser.Physics.Arcade.Group
   currentUser: string
   scoreText: Phaser.GameObjects.Text
+  changeScoreText: Phaser.GameObjects.Text
   score: number
 
   constructor() {
@@ -95,6 +96,13 @@ export default class Bird extends Phaser.Scene {
     })
     this.scoreText.setDepth(9)
     this.scoreText.setOrigin(.5, .5)
+    this.changeScoreText = this.add.text(this.size.width / 2, 200, '', {
+      fontSize: '70px',
+      fontFamily: 'fb',
+      align: 'center'
+    })
+    this.changeScoreText.setDepth(9)
+    this.changeScoreText.setOrigin(.5, .5)
     this.bird = this.physics.add.sprite(0, 0, 'bird')
     this.bird.setDepth(2)
     this.bird.setCollideWorldBounds(true);
@@ -324,9 +332,9 @@ export default class Bird extends Phaser.Scene {
       // 开启答案与小鸟的碰撞检测，用于作答情况
       this.physics.add.collider(this.bird, item.instance, () => {
         if (item.isCorrect) {
-          this.addScore(problemProint)
+          this.addScore(problemProint, true)
         } else {
-          this.addScore(-problemProint)
+          this.addScore(-problemProint, true)
         }
         this.bird.setVelocityX(0) // 防止小鸟被反作用力反弹
         this.refreshProblem(body)
@@ -448,9 +456,21 @@ export default class Bird extends Phaser.Scene {
     this.score = score
     this.scoreText.setText(this.score + '')
   }
-  addScore(score: number) { // 加分或加负分
-    this.score += score
-    this.scoreText.setText(this.score + '')
+  addScore(addScore: number, showChange?: boolean) { // 加分或加负分
+    this.setScore(this.score + addScore)
+    if (showChange) {
+      const isAdd = addScore > 0
+      this.changeScoreText.setColor(isAdd ? '#20a0ff' : '#ff6f6f')
+      this.changeScoreText.setText(isAdd ? `+${addScore}` : addScore + '')
+      this.time.addEvent({
+        delay: 1000,
+        callback: () => {
+          this.changeScoreText.setText('')
+        },
+        loop: false,
+        callbackScope: this
+      })
+    }
   }
   aliveScore() { // 存活加分
     this.addScore(1)
