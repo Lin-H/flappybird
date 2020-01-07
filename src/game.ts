@@ -301,7 +301,9 @@ export default class Bird extends Phaser.Scene {
     let body = this.makeArcadeInstance(this.problem.question.instance)
     body.setImmovable()
     this.physics.add.collider(this.bird, this.problem.question.instance, () => {
-      this.fly()
+      if (this.bird.y < HEIGHT / 2) {
+        this.fly()
+      }
     })
   }
   makeAnswer () {
