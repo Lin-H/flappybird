@@ -6,7 +6,7 @@ import problems from './problems'
 const HEIGHT = 896 || document.documentElement.clientHeight
 
 let scorePoint = 0
-const problemProint = 15
+const problemProint = 30
 let timedEvent: Phaser.Time.TimerEvent
 let timedAlive: Phaser.Time.TimerEvent
 let stopPipeTimer: Phaser.Time.TimerEvent
@@ -238,13 +238,13 @@ export default class Bird extends Phaser.Scene {
     this.makePipe()
     this.timer = setInterval(this.makePipe.bind(this), 2000)
     stopPipeTimer = this.time.addEvent({
-      delay: 6000,
+      delay: 3800,
       callback: this.switchPipeProblem,
       loop: false,
       callbackScope: this
     })
   }
-  makePipe(gap = 500) { // todo gap 原200，改为300方便调试
+  makePipe(gap = 240) { // todo gap 原200，改为300方便调试
     let up = this.physics.add.image(this.size.width + 100, 0, 'pipe')
     up.setName('up')
     up.setFlipY(true)
@@ -280,7 +280,7 @@ export default class Bird extends Phaser.Scene {
   switchPipeProblem () {
     this.stopPipes()
     makeProblemTimer = this.time.addEvent({
-      delay: 3000,
+      delay: 2500,
       callback: this.makeProblem,
       loop: false,
       callbackScope: this
@@ -307,7 +307,10 @@ export default class Bird extends Phaser.Scene {
       this.problem.question.label,
       {
         fontSize: '40px',
-        color: '#000'
+        color: '#000',
+        padding: {
+          top: 2
+        }
       }
     )
     let body = this.makeArcadeInstance(this.problem.question.instance)
@@ -326,7 +329,10 @@ export default class Bird extends Phaser.Scene {
         item.label, 
         { 
           fontSize: '28px',
-          color: '#000' 
+          color: '#000',
+          padding: {
+            top: 2
+          }
         }
       )
       let body = this.makeArcadeInstance(item.instance)
@@ -348,7 +354,7 @@ export default class Bird extends Phaser.Scene {
         if (item.isCorrect) {
           this.addScore(problemProint, true)
         } else {
-          this.addScore(-problemProint, true)
+          this.addScore(-25, true)
         }
         this.bird.setVelocityX(0) // 防止小鸟被反作用力反弹
         this.refreshProblem(body)
