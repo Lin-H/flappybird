@@ -4120,7 +4120,7 @@ var MyGame = (function () {
 
 	const HEIGHT = 896 || document.documentElement.clientHeight;
 	let scorePoint = 0;
-	const problemProint = 15;
+	const problemProint = 30;
 	let timedEvent;
 	let timedAlive;
 	let stopPipeTimer;
@@ -4312,13 +4312,13 @@ var MyGame = (function () {
 	        this.makePipe();
 	        this.timer = setInterval(this.makePipe.bind(this), 2000);
 	        stopPipeTimer = this.time.addEvent({
-	            delay: 6000,
+	            delay: 3800,
 	            callback: this.switchPipeProblem,
 	            loop: false,
 	            callbackScope: this
 	        });
 	    }
-	    makePipe(gap = 500) {
+	    makePipe(gap = 240) {
 	        let up = this.physics.add.image(this.size.width + 100, 0, 'pipe');
 	        up.setName('up');
 	        up.setFlipY(true);
@@ -4354,7 +4354,7 @@ var MyGame = (function () {
 	    switchPipeProblem() {
 	        this.stopPipes();
 	        makeProblemTimer = this.time.addEvent({
-	            delay: 3000,
+	            delay: 2500,
 	            callback: this.makeProblem,
 	            loop: false,
 	            callbackScope: this
@@ -4368,6 +4368,17 @@ var MyGame = (function () {
 	        this.problem = this.chooseProblem();
 	        this.makeQuestion();
 	        this.makeAnswer();
+	        this.time.addEvent({
+	            delay: (this.size.width / 2 + this.problem.question.instance.width + 500) / 200 * 1000,
+	            callback: () => {
+	                if (this.status === Status.end)
+	                    return;
+	                this.makePipes();
+	                timedEvent.paused = false;
+	            },
+	            loop: false,
+	            callbackScope: this
+	        });
 	    }
 	    chooseProblem() {
 	        const index = Math.floor(Math.random() * this.problems.length);
@@ -4376,7 +4387,10 @@ var MyGame = (function () {
 	    makeQuestion() {
 	        this.problem.question.instance = this.add.text(this.size.width, HEIGHT / 2 - 60, this.problem.question.label, {
 	            fontSize: '40px',
-	            color: '#000'
+	            color: '#000',
+	            padding: {
+	                top: 2
+	            }
 	        });
 	        let body = this.makeArcadeInstance(this.problem.question.instance);
 	        body.setImmovable();
@@ -4390,7 +4404,10 @@ var MyGame = (function () {
 	        this.problem.answers.forEach((item, index) => {
 	            item.instance = this.add.text(this.size.width + this.problem.question.instance.width + 500, HEIGHT / (this.problem.answers.length + 1) * (index + 1) - 100, item.label, {
 	                fontSize: '28px',
-	                color: '#000'
+	                color: '#000',
+	                padding: {
+	                    top: 2
+	                }
 	            });
 	            let body = this.makeArcadeInstance(item.instance);
 	            // 开启答案与左墙壁的碰撞检测，用于未作答情况
@@ -4399,7 +4416,8 @@ var MyGame = (function () {
 	            body.world.setBoundsCollision(true, false, true, true);
 	            body.world.on("worldbounds", body => {
 	                if (index === 0) {
-	                    this.refreshProblem(body);
+	                    body.world.removeListener('worldbounds');
+	                    this.destroyProblem();
 	                }
 	            }, item.instance);
 	            // 开启答案与小鸟的碰撞检测，用于作答情况
@@ -4408,10 +4426,11 @@ var MyGame = (function () {
 	                    this.addScore(problemProint, true);
 	                }
 	                else {
-	                    this.addScore(-problemProint, true);
+	                    this.addScore(-25, true);
 	                }
 	                this.bird.setVelocityX(0); // 防止小鸟被反作用力反弹
-	                this.refreshProblem(body);
+	                body.world.removeListener('worldbounds');
+	                this.destroyProblem();
 	            });
 	        });
 	    }
@@ -4421,14 +4440,6 @@ var MyGame = (function () {
 	        body.setAllowGravity(false);
 	        body.setVelocityX(-200);
 	        return body;
-	    }
-	    refreshProblem(body) {
-	        body.world.removeListener('worldbounds');
-	        this.destroyProblem();
-	        if (this.status === Status.end)
-	            return;
-	        this.makePipes();
-	        timedEvent.paused = false;
 	    }
 	    stopProblem() {
 	        if (!this.problem)
@@ -4592,8 +4603,7 @@ var MyGame = (function () {
 	    physics: {
 	        default: 'arcade',
 	        arcade: {
-	            gravity: { y: 2700 },
-	            debug: true
+	            gravity: { y: 2700 }
 	        }
 	    },
 	    parent: 'body',

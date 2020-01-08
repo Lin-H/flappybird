@@ -244,7 +244,7 @@ export default class Bird extends Phaser.Scene {
       callbackScope: this
     })
   }
-  makePipe(gap = 240) { // todo gap 原200，改为300方便调试
+  makePipe(gap = 240) { // todo gap 原200，改为240方便调试
     let up = this.physics.add.image(this.size.width + 100, 0, 'pipe')
     up.setName('up')
     up.setFlipY(true)
@@ -295,6 +295,16 @@ export default class Bird extends Phaser.Scene {
     this.problem = this.chooseProblem()
     this.makeQuestion()
     this.makeAnswer()
+    this.time.addEvent({
+      delay: (this.size.width / 2 + this.problem.question.instance.width + 500) / 200 * 1000,
+      callback: () => {
+        if (this.status === Status.end) return
+        this.makePipes()
+        timedEvent.paused = false
+      },
+      loop: false,
+      callbackScope: this
+    })
   }
   chooseProblem (): Problem {
     const index = Math.floor(Math.random() * this.problems.length)
@@ -344,7 +354,8 @@ export default class Bird extends Phaser.Scene {
         "worldbounds",
         body => {
           if (index === 0) {
-            this.refreshProblem(body)
+            body.world.removeListener('worldbounds')
+            this.destroyProblem()
           }
         },
         item.instance
@@ -357,7 +368,8 @@ export default class Bird extends Phaser.Scene {
           this.addScore(-25, true)
         }
         this.bird.setVelocityX(0) // 防止小鸟被反作用力反弹
-        this.refreshProblem(body)
+        body.world.removeListener('worldbounds')
+        this.destroyProblem()
       }) 
     })
   }
@@ -367,13 +379,6 @@ export default class Bird extends Phaser.Scene {
     body.setAllowGravity(false)
     body.setVelocityX(-200)
     return body
-  }
-  refreshProblem (body: arcadeBody) {
-    body.world.removeListener('worldbounds')
-    this.destroyProblem()
-    if (this.status === Status.end) return
-    this.makePipes()
-    timedEvent.paused = false
   }
   stopProblem () {
     if (!this.problem) return
@@ -533,8 +538,7 @@ const config = {
   physics: {
     default: 'arcade',
     arcade: {
-      gravity: { y: 2700 },
-      debug: true
+      gravity: { y: 2700 }
     }
   },
   parent: 'body',
