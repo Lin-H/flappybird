@@ -4320,7 +4320,7 @@ var MyGame = (function () {
 	            callbackScope: this
 	        });
 	    }
-	    makePipe(gap = 500) {
+	    makePipe(gap = 240) {
 	        let up = this.physics.add.image(this.size.width + 100, 0, 'pipe');
 	        up.setName('up');
 	        up.setFlipY(true);

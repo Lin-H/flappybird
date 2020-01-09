@@ -246,7 +246,7 @@ export default class Bird extends Phaser.Scene {
       callbackScope: this
     })
   }
-  makePipe(gap = 500) { // todo gap 原200，改为240方便调试
+  makePipe(gap = 240) { // todo gap 原200，改为240方便调试
     let up = this.physics.add.image(this.size.width + 100, 0, 'pipe')
     up.setName('up')
     up.setFlipY(true)
