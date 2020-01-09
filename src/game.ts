@@ -5,7 +5,7 @@ import problems from './problems'
 
 const HEIGHT = 896 || document.documentElement.clientHeight
 
-let scorePoint = 0
+const SPEED = 200
 const problemProint = 30
 let timedEvent: Phaser.Time.TimerEvent
 let timedAlive: Phaser.Time.TimerEvent
@@ -57,6 +57,7 @@ export default class Bird extends Phaser.Scene {
   scoreText: Phaser.GameObjects.Text
   changeScoreText: Phaser.GameObjects.Text
   score: number
+  question: Phaser.GameObjects.Text
 
   constructor() {
     super('Bird')
@@ -81,7 +82,6 @@ export default class Bird extends Phaser.Scene {
     this.openStartPanel()
     this.pipes = this.physics.add.group()
     this.size = this.scale.baseSize
-    scorePoint = this.size.width / 3
     for (let i = 0; i < Math.ceil(this.size.width / 768); i++) {
       this.add.image(i * 768 + 384 - i, 320, 'background')  // 图片拼接会有间隙
     }
@@ -111,6 +111,7 @@ export default class Bird extends Phaser.Scene {
       if (this.status === Status.end) return
       this.die()
     })
+    this.makeQuestion() // 初始化题目
 
     this.anims.create({
       key: 'birdfly',
@@ -188,7 +189,7 @@ export default class Bird extends Phaser.Scene {
     this.bird.setVelocityX(0)
     this.bird.setPosition(this.size.width / 3, 300)
     this.initProblems() // 重新初始化题目
-    this.destroyProblem()
+    // this.destroyProblem()
     this.status = Status.ready
   }
   start() {
@@ -262,8 +263,8 @@ export default class Bird extends Phaser.Scene {
     ;(down.body as Physics.Arcade.Body).setAllowGravity(false)
     up.setImmovable()
     down.setImmovable()
-    down.setVelocityX(-200)
-    up.setVelocityX(-200)
+    down.setVelocityX(-SPEED)
+    up.setVelocityX(-SPEED)
     let timer = setTimeout(() => {
       if (up.x < -100) {
         this.pipes.remove(up, true, true)
@@ -295,7 +296,12 @@ export default class Bird extends Phaser.Scene {
   }
   makeProblem () {
     this.problem = this.chooseProblem()
-    this.makeQuestion()
+    // this.makeQuestion()
+    this.question.setText(this.problem.question.label)
+    let body = this.question.body as Physics.Arcade.Body
+    body.width = this.question.width
+    this.question.setPosition(this.size.width, HEIGHT / 2 - 60);
+    (this.question.body as Physics.Arcade.Body).setVelocityX(-SPEED)
     this.makeAnswer()
     switchProblemPipeTimer = this.time.addEvent({
       delay: (this.size.width / 2 + this.problem.question.instance.width + 500) / 200 * 1000,
@@ -308,14 +314,14 @@ export default class Bird extends Phaser.Scene {
     })
   }
   chooseProblem (): Problem {
-    const index = Math.floor(Math.random() * this.problems.length)
+    const index = Phaser.Math.Between(0, this.problems.length)
     return this.problems.splice(index, 1)[0]
   }
   makeQuestion () {
-    this.problem.question.instance = this.add.text(
+    this.question = this.add.text(
       this.size.width,
       HEIGHT / 2 - 60,
-      this.problem.question.label,
+      '',
       {
         fontSize: '40px',
         color: '#000',
@@ -324,9 +330,9 @@ export default class Bird extends Phaser.Scene {
         }
       }
     )
-    let body = this.makeArcadeInstance(this.problem.question.instance)
+    let body = this.makeArcadeInstance(this.question)
     body.setImmovable()
-    this.physics.add.collider(this.bird, this.problem.question.instance, () => {
+    this.physics.add.collider(this.bird, this.question, () => {
       if (this.bird.y < HEIGHT / 2) {
         this.fly()
       }
@@ -335,7 +341,7 @@ export default class Bird extends Phaser.Scene {
   makeAnswer () {
     this.problem.answers.forEach((item, index) => {
       item.instance = this.add.text(
-        this.size.width + this.problem.question.instance.width + 500, 
+        this.size.width + this.question.width + 400, 
         HEIGHT / (this.problem.answers.length + 1) * (index + 1) - 100,
         item.label, 
         { 
@@ -347,6 +353,7 @@ export default class Bird extends Phaser.Scene {
         }
       )
       let body = this.makeArcadeInstance(item.instance)
+      body.setVelocityX(-SPEED)
       // 开启答案与左墙壁的碰撞检测，用于未作答情况
       body.setCollideWorldBounds(true)
       body.onWorldBounds = true
@@ -378,12 +385,11 @@ export default class Bird extends Phaser.Scene {
     this.physics.world.enable(instance) 
     let body = instance.body as arcadeBody
     body.setAllowGravity(false)
-    body.setVelocityX(-200)
     return body
   }
   stopProblem () {
     if (!this.problem) return
-    let questionInstance = this.problem.question.instance
+    let questionInstance = this.question
     if (questionInstance) {
       let questionBody = questionInstance.body as arcadeBody
       questionBody && questionBody.setVelocityX(0)
@@ -398,8 +404,8 @@ export default class Bird extends Phaser.Scene {
   }
   destroyProblem () {
     if (!this.problem) return
-    let questionInstance = this.problem.question.instance
-    questionInstance && this.problem.question.instance.destroy()
+    // let questionInstance = this.problem.question.instance
+    // questionInstance && this.problem.question.instance.destroy()
     this.problem.answers.forEach(item => {
       let answerInstance = item.instance
       answerInstance && answerInstance.destroy()
