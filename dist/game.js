@@ -4125,6 +4125,7 @@ var MyGame = (function () {
 	let timedAlive;
 	let stopPipeTimer;
 	let makeProblemTimer;
+	let switchProblemPipeTimer;
 	let firstAlivePipe = null;
 	var Status;
 	(function (Status) {
@@ -4302,6 +4303,7 @@ var MyGame = (function () {
 	        this.stopPipes();
 	        stopPipeTimer && stopPipeTimer.destroy();
 	        makeProblemTimer && makeProblemTimer.destroy();
+	        switchProblemPipeTimer && switchProblemPipeTimer.destroy();
 	        this.stopProblem();
 	        timedEvent.destroy();
 	        timedAlive.destroy();
@@ -4318,7 +4320,7 @@ var MyGame = (function () {
 	            callbackScope: this
 	        });
 	    }
-	    makePipe(gap = 240) {
+	    makePipe(gap = 500) {
 	        let up = this.physics.add.image(this.size.width + 100, 0, 'pipe');
 	        up.setName('up');
 	        up.setFlipY(true);
@@ -4368,11 +4370,9 @@ var MyGame = (function () {
 	        this.problem = this.chooseProblem();
 	        this.makeQuestion();
 	        this.makeAnswer();
-	        this.time.addEvent({
+	        switchProblemPipeTimer = this.time.addEvent({
 	            delay: (this.size.width / 2 + this.problem.question.instance.width + 500) / 200 * 1000,
 	            callback: () => {
-	                if (this.status === Status.end)
-	                    return;
 	                this.makePipes();
 	                timedEvent.paused = false;
 	            },

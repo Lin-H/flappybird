@@ -11,6 +11,7 @@ let timedEvent: Phaser.Time.TimerEvent
 let timedAlive: Phaser.Time.TimerEvent
 let stopPipeTimer: Phaser.Time.TimerEvent
 let makeProblemTimer: Phaser.Time.TimerEvent
+let switchProblemPipeTimer: Phaser.Time.TimerEvent
 let firstAlivePipe: Physics.Arcade.Image = null
 
 type arcadeBody = Phaser.Physics.Arcade.Body
@@ -228,6 +229,7 @@ export default class Bird extends Phaser.Scene {
     this.stopPipes()
     stopPipeTimer && stopPipeTimer.destroy()
     makeProblemTimer && makeProblemTimer.destroy()
+    switchProblemPipeTimer && switchProblemPipeTimer.destroy()
     this.stopProblem()
     timedEvent.destroy()
     timedAlive.destroy()
@@ -244,7 +246,7 @@ export default class Bird extends Phaser.Scene {
       callbackScope: this
     })
   }
-  makePipe(gap = 240) { // todo gap 原200，改为240方便调试
+  makePipe(gap = 500) { // todo gap 原200，改为240方便调试
     let up = this.physics.add.image(this.size.width + 100, 0, 'pipe')
     up.setName('up')
     up.setFlipY(true)
@@ -295,10 +297,9 @@ export default class Bird extends Phaser.Scene {
     this.problem = this.chooseProblem()
     this.makeQuestion()
     this.makeAnswer()
-    this.time.addEvent({
+    switchProblemPipeTimer = this.time.addEvent({
       delay: (this.size.width / 2 + this.problem.question.instance.width + 500) / 200 * 1000,
       callback: () => {
-        if (this.status === Status.end) return
         this.makePipes()
         timedEvent.paused = false
       },
