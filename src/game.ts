@@ -7,6 +7,7 @@ const HEIGHT = 896 || document.documentElement.clientHeight
 
 const SPEED = 200
 const problemProint = 30
+let gap = 240
 let timedEvent: Phaser.Time.TimerEvent
 let timedAlive: Phaser.Time.TimerEvent
 let stopPipeTimer: Phaser.Time.TimerEvent
@@ -189,8 +190,9 @@ export default class Bird extends Phaser.Scene {
     this.bird.setVelocityX(0)
     this.bird.setPosition(this.size.width / 3, 300)
     this.initProblems() // 重新初始化题目
-    // this.destroyProblem()
+    this.question.setPosition(this.size.width, HEIGHT / 2 - 60);
     this.status = Status.ready
+    gap = 250
   }
   start() {
     this.status = Status.playing;
@@ -247,7 +249,7 @@ export default class Bird extends Phaser.Scene {
       callbackScope: this
     })
   }
-  makePipe(gap = 240) { // todo gap 原200，改为240方便调试
+  makePipe() { // todo gap 原200，改为240方便调试
     let up = this.physics.add.image(this.size.width + 100, 0, 'pipe')
     up.setName('up')
     up.setFlipY(true)
@@ -304,7 +306,7 @@ export default class Bird extends Phaser.Scene {
     (this.question.body as Physics.Arcade.Body).setVelocityX(-SPEED)
     this.makeAnswer()
     switchProblemPipeTimer = this.time.addEvent({
-      delay: (this.size.width / 2 + this.problem.question.instance.width + 500) / 200 * 1000,
+      delay: (this.size.width / 2 + this.question.width + 500) / 200 * 1000,
       callback: () => {
         this.makePipes()
         timedEvent.paused = false
@@ -372,8 +374,12 @@ export default class Bird extends Phaser.Scene {
       this.physics.add.collider(this.bird, item.instance, () => {
         if (item.isCorrect) {
           this.addScore(problemProint, true)
+          if (gap > 200) {
+            gap -= 5
+            console.log(gap)
+          }
         } else {
-          this.addScore(-25, true)
+          this.addScore(-30, true)
         }
         this.bird.setVelocityX(0) // 防止小鸟被反作用力反弹
         body.world.removeListener('worldbounds')
