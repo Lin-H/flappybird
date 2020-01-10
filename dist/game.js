@@ -4119,8 +4119,9 @@ var MyGame = (function () {
 	];
 
 	const HEIGHT = 896 || document.documentElement.clientHeight;
-	let scorePoint = 0;
+	const SPEED = 200;
 	const problemProint = 30;
+	let gap = 240;
 	let timedEvent;
 	let timedAlive;
 	let stopPipeTimer;
@@ -4155,7 +4156,6 @@ var MyGame = (function () {
 	        this.openStartPanel();
 	        this.pipes = this.physics.add.group();
 	        this.size = this.scale.baseSize;
-	        scorePoint = this.size.width / 3;
 	        for (let i = 0; i < Math.ceil(this.size.width / 768); i++) {
 	            this.add.image(i * 768 + 384 - i, 320, 'background'); // 图片拼接会有间隙
 	        }
@@ -4186,6 +4186,7 @@ var MyGame = (function () {
 	                return;
 	            this.die();
 	        });
+	        this.makeQuestion(); // 初始化题目
 	        this.anims.create({
 	            key: 'birdfly',
 	            frames: this.anims.generateFrameNumbers('bird', { start: 0, end: 2 }),
@@ -4262,8 +4263,9 @@ var MyGame = (function () {
 	        this.bird.setVelocityX(0);
 	        this.bird.setPosition(this.size.width / 3, 300);
 	        this.initProblems(); // 重新初始化题目
-	        this.destroyProblem();
+	        this.question.setPosition(this.size.width, HEIGHT / 2 - 60);
 	        this.status = Status.ready;
+	        gap = 250;
 	    }
 	    start() {
 	        this.status = Status.playing;
@@ -4320,7 +4322,7 @@ var MyGame = (function () {
 	            callbackScope: this
 	        });
 	    }
-	    makePipe(gap = 240) {
+	    makePipe() {
 	        let up = this.physics.add.image(this.size.width + 100, 0, 'pipe');
 	        up.setName('up');
 	        up.setFlipY(true);
@@ -4335,8 +4337,8 @@ var MyGame = (function () {
 	        down.body.setAllowGravity(false);
 	        up.setImmovable();
 	        down.setImmovable();
-	        down.setVelocityX(-200);
-	        up.setVelocityX(-200);
+	        down.setVelocityX(-SPEED);
+	        up.setVelocityX(-SPEED);
 	        let timer = setTimeout(() => {
 	            if (up.x < -100) {
 	                this.pipes.remove(up, true, true);
@@ -4368,10 +4370,15 @@ var MyGame = (function () {
 	    }
 	    makeProblem() {
 	        this.problem = this.chooseProblem();
-	        this.makeQuestion();
+	        // this.makeQuestion()
+	        this.question.setText(this.problem.question.label);
+	        let body = this.question.body;
+	        body.width = this.question.width;
+	        this.question.setPosition(this.size.width, HEIGHT / 2 - 60);
+	        this.question.body.setVelocityX(-SPEED);
 	        this.makeAnswer();
 	        switchProblemPipeTimer = this.time.addEvent({
-	            delay: (this.size.width / 2 + this.problem.question.instance.width + 500) / 200 * 1000,
+	            delay: (this.size.width / 2 + this.question.width + 500) / 200 * 1000,
 	            callback: () => {
 	                this.makePipes();
 	                timedEvent.paused = false;
@@ -4381,20 +4388,20 @@ var MyGame = (function () {
 	        });
 	    }
 	    chooseProblem() {
-	        const index = Math.floor(Math.random() * this.problems.length);
+	        const index = Phaser.Math.Between(0, this.problems.length);
 	        return this.problems.splice(index, 1)[0];
 	    }
 	    makeQuestion() {
-	        this.problem.question.instance = this.add.text(this.size.width, HEIGHT / 2 - 60, this.problem.question.label, {
+	        this.question = this.add.text(this.size.width, HEIGHT / 2 - 60, '', {
 	            fontSize: '40px',
 	            color: '#000',
 	            padding: {
 	                top: 2
 	            }
 	        });
-	        let body = this.makeArcadeInstance(this.problem.question.instance);
+	        let body = this.makeArcadeInstance(this.question);
 	        body.setImmovable();
-	        this.physics.add.collider(this.bird, this.problem.question.instance, () => {
+	        this.physics.add.collider(this.bird, this.question, () => {
 	            if (this.bird.y < HEIGHT / 2) {
 	                this.fly();
 	            }
@@ -4402,7 +4409,7 @@ var MyGame = (function () {
 	    }
 	    makeAnswer() {
 	        this.problem.answers.forEach((item, index) => {
-	            item.instance = this.add.text(this.size.width + this.problem.question.instance.width + 500, HEIGHT / (this.problem.answers.length + 1) * (index + 1) - 100, item.label, {
+	            item.instance = this.add.text(this.size.width + this.question.width + 400, HEIGHT / (this.problem.answers.length + 1) * (index + 1) - 100, item.label, {
 	                fontSize: '28px',
 	                color: '#000',
 	                padding: {
@@ -4410,6 +4417,7 @@ var MyGame = (function () {
 	                }
 	            });
 	            let body = this.makeArcadeInstance(item.instance);
+	            body.setVelocityX(-SPEED);
 	            // 开启答案与左墙壁的碰撞检测，用于未作答情况
 	            body.setCollideWorldBounds(true);
 	            body.onWorldBounds = true;
@@ -4424,9 +4432,12 @@ var MyGame = (function () {
 	            this.physics.add.collider(this.bird, item.instance, () => {
 	                if (item.isCorrect) {
 	                    this.addScore(problemProint, true);
+	                    if (gap > 200) {
+	                        gap -= 5;
+	                    }
 	                }
 	                else {
-	                    this.addScore(-25, true);
+	                    this.addScore(-30, true);
 	                }
 	                this.bird.setVelocityX(0); // 防止小鸟被反作用力反弹
 	                body.world.removeListener('worldbounds');
@@ -4438,13 +4449,12 @@ var MyGame = (function () {
 	        this.physics.world.enable(instance);
 	        let body = instance.body;
 	        body.setAllowGravity(false);
-	        body.setVelocityX(-200);
 	        return body;
 	    }
 	    stopProblem() {
 	        if (!this.problem)
 	            return;
-	        let questionInstance = this.problem.question.instance;
+	        let questionInstance = this.question;
 	        if (questionInstance) {
 	            let questionBody = questionInstance.body;
 	            questionBody && questionBody.setVelocityX(0);
@@ -4460,8 +4470,8 @@ var MyGame = (function () {
 	    destroyProblem() {
 	        if (!this.problem)
 	            return;
-	        let questionInstance = this.problem.question.instance;
-	        questionInstance && this.problem.question.instance.destroy();
+	        // let questionInstance = this.problem.question.instance
+	        // questionInstance && this.problem.question.instance.destroy()
 	        this.problem.answers.forEach(item => {
 	            let answerInstance = item.instance;
 	            answerInstance && answerInstance.destroy();
@@ -4474,7 +4484,11 @@ var MyGame = (function () {
 	            return alert('姓名不能为空');
 	        localforage.getItem(userName).then((data) => {
 	            // 新建用户数据
-	            data === null && localforage.setItem(userName, 0);
+	            let localItem = {
+	                maxGrade: 0,
+	                track: []
+	            };
+	            data === null && localforage.setItem(userName, localItem);
 	            this.currentUser = userName;
 	            this.startLayer.setVisible(false);
 	        });
@@ -4522,18 +4536,21 @@ var MyGame = (function () {
 	    // 设置分数
 	    setGrade(grade) {
 	        return localforage.getItem(this.currentUser).then(data => {
-	            // 取最高分存入
-	            if (grade > data) {
-	                return localforage.setItem(this.currentUser, grade);
-	            }
-	            return Promise.resolve(0);
+	            let localItem = data;
+	            return localforage.setItem(this.currentUser, {
+	                maxGrade: Math.max(localItem.maxGrade, grade),
+	                track: localItem.track.concat({
+	                    gap,
+	                    grade
+	                })
+	            });
 	        });
 	    }
 	    // 打开排行榜
 	    openGradeBillboard(isStart) {
 	        const gradeList = [];
-	        localforage.iterate((grade, user) => {
-	            gradeList.push({ user, grade });
+	        localforage.iterate((localItem, user) => {
+	            gradeList.push({ user, grade: localItem.maxGrade });
 	        }).then(() => {
 	            gradeList.sort((a, b) => b.grade - a.grade);
 	            let html = '';

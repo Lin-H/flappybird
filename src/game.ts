@@ -33,6 +33,16 @@ type Answer = {
   instance?: Phaser.GameObjects.Text
 }
 
+type Track = {
+  gap: number,
+  grade: number
+}
+
+type LocalItem = {
+  maxGrade: number,
+  track: Array<Track>
+}
+
 enum Status {
   ready,
   playing,
@@ -376,7 +386,6 @@ export default class Bird extends Phaser.Scene {
           this.addScore(problemProint, true)
           if (gap > 200) {
             gap -= 5
-            console.log(gap)
           }
         } else {
           this.addScore(-30, true)
@@ -422,9 +431,13 @@ export default class Bird extends Phaser.Scene {
   saveUserName() {
     const userName = document.querySelector<HTMLInputElement>('.name-input').value.trim()
     if (!userName) return alert('姓名不能为空')
-    localForage.getItem(userName).then((data) => {
+    localForage.getItem(userName).then((data?: LocalItem) => {
       // 新建用户数据
-      data === null && localForage.setItem(userName, 0)
+      let localItem: LocalItem = {
+        maxGrade: 0,
+        track: []
+      }
+      data === null && localForage.setItem(userName, localItem)
       this.currentUser = userName
       this.startLayer.setVisible(false)
     })
@@ -469,20 +482,23 @@ export default class Bird extends Phaser.Scene {
     this.endLayer.setVisible(true)
   }
   // 设置分数
-  setGrade(grade: Number) {
+  setGrade(grade: number) {
     return localForage.getItem(this.currentUser).then(data => {
-      // 取最高分存入
-      if (grade > data) {
-        return localForage.setItem(this.currentUser, grade)
-      }
-      return Promise.resolve<Number>(0)
+      let localItem: any = data
+      return localForage.setItem(this.currentUser, {
+        maxGrade: Math.max(localItem.maxGrade, grade), // 取最高分存入
+        track: localItem.track.concat({
+          gap,
+          grade
+        })
+      })
     })
   }
   // 打开排行榜
   openGradeBillboard(isStart) {
     const gradeList = []
-    localForage.iterate((grade, user) => {
-      gradeList.push({user, grade})
+    localForage.iterate((localItem: LocalItem, user) => {
+      gradeList.push({user, grade: localItem.maxGrade})
     }).then(() => {
       gradeList.sort((a, b) => b.grade - a.grade)
       let html = ''
