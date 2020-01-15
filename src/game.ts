@@ -200,6 +200,7 @@ export default class Bird extends Phaser.Scene {
     this.bird.setVelocityX(0)
     this.bird.setPosition(this.size.width / 3, 300)
     this.initProblems() // 重新初始化题目
+    this.destroyProblem()
     this.question.setPosition(this.size.width, HEIGHT / 2 - 60);
     this.status = Status.ready
     gap = 250
@@ -326,7 +327,7 @@ export default class Bird extends Phaser.Scene {
     })
   }
   chooseProblem (): Problem {
-    const index = Phaser.Math.Between(0, this.problems.length)
+    const index = Phaser.Math.Between(0, this.problems.length - 1)
     return this.problems.splice(index, 1)[0]
   }
   makeQuestion () {
